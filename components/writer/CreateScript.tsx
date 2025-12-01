@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Project, ProjectData, Channel, Role, ContentType } from '../../types';
-import { db } from '../../services/mockDb';
+import { db } from '../../services/supabaseDb';
 import { ArrowLeft, Save, Send, Image as ImageIcon, Link as LinkIcon, FileText } from 'lucide-react';
 
 interface Props {

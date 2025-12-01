@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { db } from './services/mockDb';
+import { db } from './services/supabaseDb';
 import { User, Project, Channel, Role } from './types';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -54,14 +55,17 @@ function App() {
     }
   }, []);
 
-  const refreshData = (u: User = user!) => {
+  const refreshData = async (u: User = user!) => {
     if (!u) return;
 
     if (u.role === Role.ADMIN) {
-      setAdminUsers([...db.getUsers()]);
-      setAdminLogs([...db.getSystemLogs()]);
+      const users = await db.getUsers();
+      setAdminUsers([...users]);
+      const logs = await db.getSystemLogs();
+      setAdminLogs([...logs]);
     } else {
-      setProjects([...db.getProjects(u)]);
+      const userProjects = await db.getProjects(u);
+      setProjects([...userProjects]);
     }
   };
 
@@ -76,14 +80,14 @@ function App() {
     }
   };
 
-  const handleLogout = () => {
-    db.logout();
+  const handleLogout = async () => {
+    await db.logout();
     setUser(null);
     setProjects([]);
   };
 
-  const handleCreateProject = (title: string, channel: Channel, dueDate: string) => {
-    db.createProject(title, channel, dueDate);
+  const handleCreateProject = async (title: string, channel: Channel, dueDate: string) => {
+    await db.createProject(title, channel, dueDate);
     refreshData(user!);
   };
 

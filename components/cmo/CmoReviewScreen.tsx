@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Project, Role, WorkflowStage, STAGE_LABELS } from '../../types';
-import { db } from '../../services/mockDb';
+import { db } from '../../services/supabaseDb';
 import { ArrowLeft, Check, RotateCcw, X } from 'lucide-react';
 
 interface Props {
@@ -117,9 +117,9 @@ const CmoReviewScreen: React.FC<Props> = ({ project, onBack, onComplete }) => {
                         onClick={handleSubmit}
                         disabled={!decision || isSubmitting || (decision === 'REWORK' && !comment)}
                         className={`w-full mt-8 py-4 rounded-xl font-bold text-white shadow-lg transition-all ${decision === 'APPROVE' ? 'bg-blue-600 hover:bg-blue-700' :
-                                decision === 'REWORK' ? 'bg-yellow-500 hover:bg-yellow-600' :
-                                    decision === 'REJECT' ? 'bg-red-600 hover:bg-red-700' :
-                                        'bg-slate-300 cursor-not-allowed'
+                            decision === 'REWORK' ? 'bg-yellow-500 hover:bg-yellow-600' :
+                                decision === 'REJECT' ? 'bg-red-600 hover:bg-red-700' :
+                                    'bg-slate-300 cursor-not-allowed'
                             }`}
                     >
                         {isSubmitting ? 'Processing...' : 'Confirm Decision'}

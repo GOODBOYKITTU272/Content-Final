@@ -1,149 +1,148 @@
 import React, { useState } from 'react';
 import { User, Role, UserStatus, SystemLog } from '../../types';
-import { db } from '../../services/mockDb';
+import { db } from '../../services/supabaseDb';
 import { Search, Plus, Filter, Edit2, Shield, Power, Key, X, User as UserIcon, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { AdminView } from '../AdminLayout';
 
 interface Props {
-  users: User[];
-  logs: SystemLog[];
-  onRefresh: () => void;
-  onNavigate: (view: AdminView) => void;
+    users: User[];
+    logs: SystemLog[];
+    onRefresh: () => void;
+    onNavigate: (view: AdminView) => void;
 }
 
 const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<Role | 'ALL'>('ALL');
-  const [statusFilter, setStatusFilter] = useState<UserStatus | 'ALL'>('ALL');
-  
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState<Role | 'ALL'>('ALL');
+    const [statusFilter, setStatusFilter] = useState<UserStatus | 'ALL'>('ALL');
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-        <button 
-          onClick={() => onNavigate('USER_ADD')}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-md shadow-red-100"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add User
-        </button>
-      </div>
+    const filteredUsers = users.filter(user => {
+        const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
+        const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter;
+        return matchesSearch && matchesRole && matchesStatus;
+    });
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
-            <input 
-                type="text" 
-                placeholder="Search by name or email..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+                <button
+                    onClick={() => onNavigate('USER_ADD')}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-md shadow-red-100"
+                >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add User
+                </button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 items-center">
+                <div className="relative flex-1 w-full">
+                    <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Search by name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                </div>
+                <div className="flex items-center space-x-2 w-full md:w-auto">
+                    <Filter className="w-5 h-5 text-slate-400" />
+                    <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value as Role | 'ALL')}
+                        className="p-2 border border-slate-300 rounded-lg text-sm"
+                    >
+                        <option value="ALL">All Roles</option>
+                        {Object.values(Role).map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as UserStatus | 'ALL')}
+                        className="p-2 border border-slate-300 rounded-lg text-sm"
+                    >
+                        <option value="ALL">All Status</option>
+                        <option value={UserStatus.ACTIVE}>Active</option>
+                        <option value={UserStatus.INACTIVE}>Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                            <tr>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Login</th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredUsers.map(user => (
+                                <tr key={user.id} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
+                                                {user.full_name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-medium text-slate-900">{user.full_name}</div>
+                                                <div className="text-xs text-slate-500">{user.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                            {user.status === UserStatus.ACTIVE ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-slate-500">
+                                        {user.last_login ? formatDistanceToNow(new Date(user.last_login), { addSuffix: true }) : 'Never'}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={() => setEditingUser(user)}
+                                            className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                                        >
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                                        No users found matching your filters.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Modals */}
+            {editingUser && (
+                <EditUserModal user={editingUser} logs={logs} onClose={() => setEditingUser(null)} onRefresh={onRefresh} />
+            )}
         </div>
-        <div className="flex items-center space-x-2 w-full md:w-auto">
-            <Filter className="w-5 h-5 text-slate-400" />
-            <select 
-                value={roleFilter} 
-                onChange={(e) => setRoleFilter(e.target.value as Role | 'ALL')}
-                className="p-2 border border-slate-300 rounded-lg text-sm"
-            >
-                <option value="ALL">All Roles</option>
-                {Object.values(Role).map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <select 
-                value={statusFilter} 
-                onChange={(e) => setStatusFilter(e.target.value as UserStatus | 'ALL')}
-                className="p-2 border border-slate-300 rounded-lg text-sm"
-            >
-                <option value="ALL">All Status</option>
-                <option value={UserStatus.ACTIVE}>Active</option>
-                <option value={UserStatus.INACTIVE}>Inactive</option>
-            </select>
-        </div>
-      </div>
-
-      {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Login</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.map(user => (
-                        <tr key={user.id} className="hover:bg-slate-50 transition-colors group">
-                            <td className="px-6 py-4">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
-                                        {user.full_name.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <div className="text-sm font-medium text-slate-900">{user.full_name}</div>
-                                        <div className="text-xs text-slate-500">{user.email}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
-                                    {user.role}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    user.status === UserStatus.ACTIVE ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-500'
-                                }`}>
-                                    {user.status === UserStatus.ACTIVE ? 'Active' : 'Inactive'}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-slate-500">
-                                {user.last_login ? formatDistanceToNow(new Date(user.last_login), { addSuffix: true }) : 'Never'}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button 
-                                    onClick={() => setEditingUser(user)}
-                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition-colors"
-                                >
-                                    Edit
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                    {filteredUsers.length === 0 && (
-                        <tr>
-                            <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
-                                No users found matching your filters.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
-      </div>
-
-      {/* Modals */}
-      {editingUser && (
-          <EditUserModal user={editingUser} logs={logs} onClose={() => setEditingUser(null)} onRefresh={onRefresh} />
-      )}
-    </div>
-  );
+    );
 };
 
 // --- Sub-components for Modals ---
@@ -187,15 +186,15 @@ const EditUserModal: React.FC<{ user: User; logs: SystemLog[]; onClose: () => vo
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                                <input type="text" className="w-full p-2 border rounded" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
+                                <input type="text" className="w-full p-2 border rounded" value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                                <input type="email" className="w-full p-2 border rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                <input type="email" className="w-full p-2 border rounded" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                                <input type="tel" className="w-full p-2 border rounded" value={formData.phone || ''} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                                <input type="tel" className="w-full p-2 border rounded" value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
                             </div>
                         </div>
                     )}
@@ -211,10 +210,10 @@ const EditUserModal: React.FC<{ user: User; logs: SystemLog[]; onClose: () => vo
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Assigned Role</label>
-                                <select 
+                                <select
                                     className="w-full p-2 border border-slate-300 rounded"
                                     value={formData.role}
-                                    onChange={e => setFormData({...formData, role: e.target.value as Role})}
+                                    onChange={e => setFormData({ ...formData, role: e.target.value as Role })}
                                 >
                                     {Object.values(Role).map(r => <option key={r} value={r}>{r}</option>)}
                                 </select>
@@ -230,12 +229,12 @@ const EditUserModal: React.FC<{ user: User; logs: SystemLog[]; onClose: () => vo
                                     <p className="text-sm text-slate-500">Enable or disable system access.</p>
                                 </div>
                                 <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input 
-                                        type="checkbox" 
-                                        name="toggle" 
-                                        id="toggle" 
+                                    <input
+                                        type="checkbox"
+                                        name="toggle"
+                                        id="toggle"
                                         checked={formData.status === UserStatus.ACTIVE}
-                                        onChange={(e) => setFormData({...formData, status: e.target.checked ? UserStatus.ACTIVE : UserStatus.INACTIVE})}
+                                        onChange={(e) => setFormData({ ...formData, status: e.target.checked ? UserStatus.ACTIVE : UserStatus.INACTIVE })}
                                         className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
                                         style={{ right: formData.status === UserStatus.ACTIVE ? 0 : 'auto', left: formData.status === UserStatus.ACTIVE ? 'auto' : 0 }}
                                     />
@@ -248,7 +247,7 @@ const EditUserModal: React.FC<{ user: User; logs: SystemLog[]; onClose: () => vo
                                 <span>Send Password Reset Email</span>
                             </button>
 
-                             <div className="mt-4 p-4 border rounded bg-gray-50">
+                            <div className="mt-4 p-4 border rounded bg-gray-50">
                                 <p className="text-xs text-slate-500 uppercase font-bold mb-2">Login Info</p>
                                 <p className="text-sm">Last Login: {user.last_login ? new Date(user.last_login).toLocaleString() : 'Never'}</p>
                             </div>
