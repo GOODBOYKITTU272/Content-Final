@@ -22,16 +22,21 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        console.log('Form submitted with data:', formData);
+
         try {
             if (formData.sendEmail) {
+                console.log('Calling inviteUser function...');
                 // Use invite function to create user AND send email
-                await db.auth.inviteUser(formData.email, {
+                const result = await db.auth.inviteUser(formData.email, {
                     full_name: formData.full_name,
                     role: formData.role,
                     phone: formData.phone
                 });
+                console.log('Invite result:', result);
                 alert(`User ${formData.full_name} created successfully! Invitation email sent.`);
             } else {
+                console.log('Creating user without email...');
                 // Just create database record without email
                 await db.addUser({
                     full_name: formData.full_name,
@@ -45,7 +50,8 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
 
             onUserAdded();
         } catch (error: any) {
-            alert(`Error: ${error.message}`);
+            console.error('Error creating user:', error);
+            alert(`Error: ${error.message || 'Unknown error occurred'}`);
         }
     };
 

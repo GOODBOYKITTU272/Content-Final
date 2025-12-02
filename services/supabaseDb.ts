@@ -68,16 +68,19 @@ export const auth = {
 
     // Invite user by email (Admin only) - Calls secure Edge Function
     async inviteUser(email: string, userData: { full_name: string; role: Role; phone?: string }) {
+        console.log('inviteUser called with:', email, userData);
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zxnevoulicmapqmniaos.supabase.co';
 
         // Get current session token for authentication
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('Session:', session ? 'Found' : 'Not found');
 
         if (!session) {
             throw new Error('You must be logged in to invite users');
         }
 
         // Call the Edge Function (service key is secure on server)
+        console.log('Calling Edge Function at:', `${supabaseUrl}/functions/v1/invite-user`);
         const response = await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
             method: 'POST',
             headers: {
@@ -87,12 +90,16 @@ export const auth = {
             body: JSON.stringify({ email, userData })
         });
 
+        console.log('Edge Function response status:', response.status);
+
         if (!response.ok) {
             const error = await response.json();
+            console.error('Edge Function error:', error);
             throw new Error(error.error || 'Failed to invite user');
         }
 
         const data = await response.json();
+        console.log('Edge Function success:', data);
         return data.user;
     }
 };

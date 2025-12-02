@@ -39,18 +39,26 @@ serve(async (req) => {
             )
         }
 
+        console.log(`Attempting to invite user: ${email} with role: ${userData.role}`)
+
+        const redirectUrl = `${req.headers.get('origin')}/set-password?email=${encodeURIComponent(email)}&role=${userData.role}`
+        console.log(`Redirect URL: ${redirectUrl}`)
+
         // Invite user using admin client
         const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
             data: userData,
-            redirectTo: `${req.headers.get('origin')}/set-password?email=${encodeURIComponent(email)}&role=${userData.role}`
+            redirectTo: redirectUrl
         })
 
         if (error) {
+            console.error('Supabase Invite Error:', error)
             return new Response(
                 JSON.stringify({ error: error.message }),
                 { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             )
         }
+
+        console.log('User invited successfully:', data.user?.id)
 
         // Also create user record in public.users table
         const { error: dbError } = await supabaseAdmin
