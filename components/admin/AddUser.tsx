@@ -19,22 +19,34 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
         ssoAllowed: false
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        db.addUser({
-            full_name: formData.full_name,
-            email: formData.email,
-            phone: formData.phone,
-            role: formData.role,
-            status: formData.status
-        });
+        try {
+            if (formData.sendEmail) {
+                // Use invite function to create user AND send email
+                await db.auth.inviteUser(formData.email, {
+                    full_name: formData.full_name,
+                    role: formData.role,
+                    phone: formData.phone
+                });
+                alert(`User ${formData.full_name} created successfully! Invitation email sent.`);
+            } else {
+                // Just create database record without email
+                await db.addUser({
+                    full_name: formData.full_name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    role: formData.role,
+                    status: formData.status
+                });
+                alert(`User ${formData.full_name} created successfully!`);
+            }
 
-        // Simulate API delay
-        setTimeout(() => {
-            alert(`User ${formData.full_name} created successfully!`);
             onUserAdded();
-        }, 500);
+        } catch (error: any) {
+            alert(`Error: ${error.message}`);
+        }
     };
 
     return (
