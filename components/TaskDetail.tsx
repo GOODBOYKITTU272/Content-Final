@@ -220,9 +220,10 @@ const TaskDetail: React.FC<Props> = ({ project, currentUserRole, onClose, onUpda
       case WorkflowStage.SCRIPT_REVIEW_L1:
       case WorkflowStage.SCRIPT_REVIEW_L2:
         return renderScriptFields();
-      case WorkflowStage.SHOOT: return renderShootFields();
-      case WorkflowStage.EDIT: return renderEditFields();
-      case WorkflowStage.DESIGN: return renderDesignFields();
+      case WorkflowStage.CINEMATOGRAPHY: return renderShootFields();
+      case WorkflowStage.VIDEO_EDITING: return renderEditFields();
+      case WorkflowStage.THUMBNAIL_DESIGN:
+      case WorkflowStage.CREATIVE_DESIGN: return renderDesignFields();
       case WorkflowStage.METADATA: return renderMetadataFields();
       case WorkflowStage.PUBLISH: return renderPublishFields();
       default: return <p>Details not available for this stage.</p>;
@@ -273,7 +274,7 @@ const TaskDetail: React.FC<Props> = ({ project, currentUserRole, onClose, onUpda
               {project.history.slice().reverse().map(event => (
                 <div key={event.id} className="flex space-x-4">
                   <div className={`mt-1 min-w-[16px] w-4 h-4 border-2 border-black ${event.action === 'REJECTED' ? 'bg-[#FF4F4F]' :
-                      event.action === 'APPROVED' || event.action === 'PUBLISHED' ? 'bg-[#4ADE80]' : 'bg-slate-200'
+                    event.action === 'APPROVED' || event.action === 'PUBLISHED' ? 'bg-[#4ADE80]' : 'bg-slate-200'
                     }`} />
                   <div>
                     <div className="flex items-center space-x-2">

@@ -43,14 +43,14 @@ const CeoReviewScreen: React.FC<Props> = ({ project, user, onBack, onComplete })
         }
 
         // 2. Final Review Stage: Can go to Cine, Editor, or Designer. CANNOT go to Writer.
-        if (project.current_stage === WorkflowStage.FINAL_REVIEW_L2) {
+        if (project.current_stage === WorkflowStage.FINAL_REVIEW_CEO) {
             const options = [
-                { value: WorkflowStage.DESIGN, label: 'Designer (Fix Visuals)' },
+                { value: WorkflowStage.CREATIVE_DESIGN, label: 'Designer (Fix Visuals)' },
             ];
             // If video channel, add Editor/Cine
             if (project.channel !== Channel.LINKEDIN) {
-                options.push({ value: WorkflowStage.EDIT, label: 'Editor (Fix Video)' });
-                options.push({ value: WorkflowStage.SHOOT, label: 'Cinematographer (Reshoot)' });
+                options.push({ value: WorkflowStage.VIDEO_EDITING, label: 'Editor (Fix Video)' });
+                options.push({ value: WorkflowStage.CINEMATOGRAPHY, label: 'Cinematographer (Reshoot)' });
             }
             return options;
         }
@@ -73,8 +73,8 @@ const CeoReviewScreen: React.FC<Props> = ({ project, user, onBack, onComplete })
                         <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Review: {project.title}</h1>
                         <div className="flex items-center space-x-2 mt-1">
                             <span className={`px-2 py-0.5 text-xs font-black uppercase border-2 border-black text-white ${project.channel === 'YOUTUBE' ? 'bg-[#FF4F4F]' :
-                                    project.channel === 'LINKEDIN' ? 'bg-[#0085FF]' :
-                                        'bg-[#D946EF]'
+                                project.channel === 'LINKEDIN' ? 'bg-[#0085FF]' :
+                                    'bg-[#D946EF]'
                                 }`}>
                                 {project.channel}
                             </span>
@@ -266,9 +266,9 @@ const CeoReviewScreen: React.FC<Props> = ({ project, user, onBack, onComplete })
                             disabled={!decision || isSubmitting || (decision === 'REWORK' && !reworkStage) || ((decision === 'REWORK' || decision === 'REJECT') && !comment)}
                             onClick={handleSubmit}
                             className={`w-full py-5 border-2 border-black font-black uppercase text-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-y-[2px] hover:translate-x-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[6px] active:translate-x-[6px] transition-all flex justify-center items-center ${decision === 'REWORK' ? 'bg-[#FFD952] text-black' :
-                                    decision === 'REJECT' ? 'bg-[#FF4F4F] text-white' :
-                                        decision === 'APPROVE' ? 'bg-[#0085FF] text-white' :
-                                            'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300 shadow-none'
+                                decision === 'REJECT' ? 'bg-[#FF4F4F] text-white' :
+                                    decision === 'APPROVE' ? 'bg-[#0085FF] text-white' :
+                                        'bg-slate-200 text-slate-400 cursor-not-allowed border-slate-300 shadow-none'
                                 }`}
                         >
                             {isSubmitting ? (
