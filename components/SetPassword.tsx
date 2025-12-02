@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
+import { db } from '../services/supabaseDb';
 
 const SetPassword: React.FC = () => {
     const [searchParams] = useSearchParams();
@@ -35,17 +36,15 @@ const SetPassword: React.FC = () => {
         setLoading(true);
 
         try {
-            // TODO: Replace with Supabase password update
-            // await supabase.auth.updateUser({ password });
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Update password using Supabase
+            await db.auth.updatePassword(password);
 
             console.log('Password set for:', email);
 
-            // Redirect to login page or auto-login
+            // Redirect to dashboard (user is already logged in via invite link)
             navigate('/');
         } catch (err: any) {
+            console.error('Error setting password:', err);
             setError(err.message || 'Failed to set password');
         } finally {
             setLoading(false);
