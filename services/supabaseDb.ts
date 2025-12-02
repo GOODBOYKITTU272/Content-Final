@@ -66,15 +66,22 @@ export const auth = {
         if (error) throw error;
     },
 
-    // Invite user by email (Admin only)
+    // Invite user by email (Admin only - calls secure Edge Function)
     async inviteUser(email: string, userData: { full_name: string; role: Role; phone?: string }) {
-        const { data, error } = await supabase.auth.admin.inviteUserByEmail(
-            email,
-            {
-                data: userData,
-                redirectTo: `${window.location.origin}/set-password?email=${encodeURIComponent(email)}&role=${userData.role}`
+        // Get current session for authorization
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+            throw new Error('Not authenticated');
+        }
+
+        // Call Edge Function with service role key (server-side)
+        const { data, error } = await supabase.functions.invoke('invite-user', {
+            body: { email, ...userData },
+            headers: {
+                Authorization: `Bearer ${session.access_token}`
             }
-        );
+        });
 
         if (error) throw error;
         return data;

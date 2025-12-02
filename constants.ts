@@ -2,41 +2,42 @@ import { Channel, Role, WorkflowStage, UserStatus } from './types';
 
 // Define the linear workflow for each channel
 export const WORKFLOWS: Record<Channel, { stage: WorkflowStage; role: Role }[]> = {
+  // LinkedIn: Creative-only path (no video production)
   [Channel.LINKEDIN]: [
     { stage: WorkflowStage.SCRIPT, role: Role.WRITER },
     { stage: WorkflowStage.SCRIPT_REVIEW_L1, role: Role.CMO },
     { stage: WorkflowStage.SCRIPT_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.DESIGN, role: Role.DESIGNER },
-    { stage: WorkflowStage.FINAL_REVIEW_L1, role: Role.CMO },
-    { stage: WorkflowStage.FINAL_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.PUBLISH, role: Role.OPS },
-    { stage: WorkflowStage.COMPLETED, role: Role.OPS }, // End state
+    { stage: WorkflowStage.CREATIVE_DESIGN, role: Role.DESIGNER },
+    { stage: WorkflowStage.FINAL_REVIEW_CMO, role: Role.CMO },
+    { stage: WorkflowStage.FINAL_REVIEW_CEO, role: Role.CEO },
+    { stage: WorkflowStage.OPS_SCHEDULING, role: Role.OPS },
+    { stage: WorkflowStage.POSTED, role: Role.OPS }, // End state
   ],
+  // YouTube: Full video production path
   [Channel.YOUTUBE]: [
     { stage: WorkflowStage.SCRIPT, role: Role.WRITER },
     { stage: WorkflowStage.SCRIPT_REVIEW_L1, role: Role.CMO },
     { stage: WorkflowStage.SCRIPT_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.SHOOT, role: Role.CINE },
-    { stage: WorkflowStage.EDIT, role: Role.EDITOR },
-    { stage: WorkflowStage.DESIGN, role: Role.DESIGNER },
-    { stage: WorkflowStage.METADATA, role: Role.WRITER },
-    { stage: WorkflowStage.FINAL_REVIEW_L1, role: Role.CMO },
-    { stage: WorkflowStage.FINAL_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.PUBLISH, role: Role.OPS },
-    { stage: WorkflowStage.COMPLETED, role: Role.OPS },
+    { stage: WorkflowStage.CINEMATOGRAPHY, role: Role.CINE },
+    { stage: WorkflowStage.VIDEO_EDITING, role: Role.EDITOR },
+    { stage: WorkflowStage.THUMBNAIL_DESIGN, role: Role.DESIGNER },
+    { stage: WorkflowStage.FINAL_REVIEW_CMO, role: Role.CMO },
+    { stage: WorkflowStage.FINAL_REVIEW_CEO, role: Role.CEO },
+    { stage: WorkflowStage.OPS_SCHEDULING, role: Role.OPS },
+    { stage: WorkflowStage.POSTED, role: Role.OPS },
   ],
+  // Instagram: Video production path (same as YouTube)
   [Channel.INSTAGRAM]: [
     { stage: WorkflowStage.SCRIPT, role: Role.WRITER },
     { stage: WorkflowStage.SCRIPT_REVIEW_L1, role: Role.CMO },
     { stage: WorkflowStage.SCRIPT_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.SHOOT, role: Role.CINE },
-    { stage: WorkflowStage.EDIT, role: Role.EDITOR },
-    { stage: WorkflowStage.DESIGN, role: Role.DESIGNER },
-    { stage: WorkflowStage.METADATA, role: Role.WRITER },
-    { stage: WorkflowStage.FINAL_REVIEW_L1, role: Role.CMO },
-    { stage: WorkflowStage.FINAL_REVIEW_L2, role: Role.CEO },
-    { stage: WorkflowStage.PUBLISH, role: Role.OPS },
-    { stage: WorkflowStage.COMPLETED, role: Role.OPS },
+    { stage: WorkflowStage.CINEMATOGRAPHY, role: Role.CINE },
+    { stage: WorkflowStage.VIDEO_EDITING, role: Role.EDITOR },
+    { stage: WorkflowStage.THUMBNAIL_DESIGN, role: Role.DESIGNER },
+    { stage: WorkflowStage.FINAL_REVIEW_CMO, role: Role.CMO },
+    { stage: WorkflowStage.FINAL_REVIEW_CEO, role: Role.CEO },
+    { stage: WorkflowStage.OPS_SCHEDULING, role: Role.OPS },
+    { stage: WorkflowStage.POSTED, role: Role.OPS },
   ],
 };
 
