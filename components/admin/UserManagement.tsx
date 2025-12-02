@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { User, Role, UserStatus, SystemLog } from '../../types';
 import { db } from '../../services/supabaseDb';
-import { Search, Plus, Filter, Edit2, Shield, Power, Key, X, User as UserIcon, AlertTriangle } from 'lucide-react';
+import { Search, Plus, Filter, Edit2, Shield, Power, Key, X, User as UserIcon, AlertTriangle, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { AdminView } from '../AdminLayout';
 
@@ -116,12 +116,31 @@ const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate })
                                         {user.last_login ? formatDistanceToNow(new Date(user.last_login), { addSuffix: true }) : 'Never'}
                                     </td>
                                     <td className="px-6 py-4 text-right">
-                                        <button
-                                            onClick={() => setEditingUser(user)}
-                                            className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition-colors"
-                                        >
-                                            Edit
-                                        </button>
+                                        <div className="flex items-center justify-end space-x-2">
+                                            <button
+                                                onClick={() => setEditingUser(user)}
+                                                className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    if (window.confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+                                                        try {
+                                                            await db.deleteUser(user.id);
+                                                            alert('User deleted successfully');
+                                                            onRefresh();
+                                                        } catch (error: any) {
+                                                            alert(`Error deleting user: ${error.message}`);
+                                                        }
+                                                    }
+                                                }}
+                                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                                title="Delete User"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
