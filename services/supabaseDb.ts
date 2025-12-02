@@ -66,20 +66,25 @@ export const auth = {
         if (error) throw error;
     },
 
-    // Invite user by email (Admin only) - Uses service role key
+    // Invite user by email (Admin only)
+    // SECURITY: This function is DISABLED until Edge Function is properly deployed
+    // DO NOT use service role key in client code - it's a critical security vulnerability
     async inviteUser(email: string, userData: { full_name: string; role: Role; phone?: string }) {
-        const { supabaseAdmin } = await import('./supabaseAdmin');
-
-        const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
-            email,
-            {
-                data: userData,
-                redirectTo: `${window.location.origin}/set-password?email=${encodeURIComponent(email)}&role=${userData.role}`
-            }
+        throw new Error(
+            'inviteUser is disabled for security reasons. ' +
+            'Service role key must not be exposed in client code. ' +
+            'Deploy Edge Function at supabase/functions/invite-user/ and call that instead.'
         );
 
-        if (error) throw error;
-        return data;
+        // TODO: Replace with Edge Function call:
+        // const response = await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
+        //     method: 'POST',
+        //     headers: {
+        //         'Authorization': `Bearer ${anonKey}`,
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify({ email, userData })
+        // });
     }
 };
 
