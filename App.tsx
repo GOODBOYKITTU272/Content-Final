@@ -115,6 +115,13 @@ function App() {
     initializeAuth();
   }, []);
 
+  // Save admin view to localStorage when it changes
+  useEffect(() => {
+    if (user?.role === Role.ADMIN && adminView) {
+      localStorage.setItem('admin_last_view', adminView);
+    }
+  }, [adminView, user]);
+
   const refreshData = async (u: User = user!) => {
     if (!u) return;
 
@@ -123,6 +130,12 @@ function App() {
       setAdminUsers([...users]);
       const logs = await db.getSystemLogs();
       setAdminLogs([...logs]);
+
+      // Restore last admin view from localStorage
+      const savedView = localStorage.getItem('admin_last_view') as AdminView;
+      if (savedView) {
+        setAdminView(savedView);
+      }
     } else {
       const userProjects = await db.getProjects(u);
       setProjects([...userProjects]);
@@ -149,6 +162,9 @@ function App() {
       setAdminLogs([]);
       setAdminView('DASH');
       setLoading(false);
+
+      // Clear saved admin view
+      localStorage.removeItem('admin_last_view');
     } catch (error) {
       console.error('Logout failed:', error);
     }
