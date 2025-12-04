@@ -44,7 +44,7 @@ import ObserverDashboard from './components/observer/ObserverDashboard';
 function App() {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false for instant render
   const [countdown, setCountdown] = useState(5);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
