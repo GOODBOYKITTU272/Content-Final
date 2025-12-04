@@ -155,9 +155,7 @@ function App() {
     if (currentUser) {
       setUser(currentUser);
       refreshData(currentUser);
-      if (currentUser.role === Role.ADMIN) {
-        setAdminView('DASH');
-      }
+      // Don't reset adminView - it's already loaded from localStorage in useState initializer
     }
   };
 
