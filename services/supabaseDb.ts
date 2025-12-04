@@ -716,27 +716,6 @@ export const helpers = {
 // Session management (mimics mockDb behavior)
 let currentUserCache: User | null = null;
 
-// Initialize current user from Supabase session
-const initializeCurrentUser = async () => {
-    try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-            // Get full user data from users table
-            const { data } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', authUser.email)
-                .single();
-            currentUserCache = data as User;
-        }
-    } catch (error) {
-        console.error('Failed to initialize current user:', error);
-    }
-};
-
-// Auto-initialize
-initializeCurrentUser();
-
 // Listen for auth changes
 supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
