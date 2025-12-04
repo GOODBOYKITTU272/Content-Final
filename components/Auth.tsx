@@ -23,9 +23,16 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
         try {
             if (email && password) {
-                // Use the compatibility wrapper's login method
-                // This now performs real Supabase auth
-                await db.login(email, password);
+                // Time-box login to avoid hanging UI
+                const loginPromise = db.login(email, password);
+                const timed = Promise.race([
+                    loginPromise,
+                    new Promise<never>((_, reject) =>
+                        setTimeout(() => reject(new Error('Login request timed out. Please try again.')), 10000)
+                    )
+                ]);
+
+                await timed;
                 onLogin();
             }
         } catch (err: any) {
