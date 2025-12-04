@@ -103,12 +103,7 @@ function App() {
       setAdminUsers([...users]);
       const logs = await db.getSystemLogs();
       setAdminLogs([...logs]);
-
-      // Restore last admin view from localStorage
-      const savedView = localStorage.getItem('admin_last_view') as AdminView;
-      if (savedView) {
-        setAdminView(savedView);
-      }
+      // adminView is already initialized from localStorage on mount - no need to restore here
     } else {
       const userProjects = await db.getProjects(u);
       setProjects([...userProjects]);
