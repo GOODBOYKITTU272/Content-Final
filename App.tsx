@@ -80,15 +80,8 @@ function App() {
           setCountdown(prev => Math.max(1, prev - 1));
         }, 1000);
 
-        // Add timeout to prevent infinite loading
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Session check timeout')), 5000)
-        );
-
-        const authPromise = db.auth.getCurrentUser();
-
-        // Wait for Supabase to restore session (with timeout)
-        const authUser = await Promise.race([authPromise, timeoutPromise]) as any;
+        // Wait for Supabase to restore session (no timeout - let it complete naturally)
+        const authUser = await db.auth.getCurrentUser();
 
         console.log('Auth user:', authUser ? 'Found' : 'Not found');
 
