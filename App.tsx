@@ -150,12 +150,24 @@ function App() {
     }
   };
 
-  const handleLogin = () => {
-    const currentUser = db.getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      refreshData(currentUser);
-      // Don't reset adminView - it's already loaded from localStorage in useState initializer
+  const handleLogin = async () => {
+    try {
+      // Get authenticated user from Supabase
+      const authUser = await db.auth.getCurrentUser();
+
+      if (authUser && authUser.email) {
+        // Get full user data from database
+        const fullUser = await db.users.getByEmail(authUser.email);
+
+        if (fullUser) {
+          setUser(fullUser);
+          await refreshData(fullUser);
+        } else {
+          console.error('User profile not found in database');
+        }
+      }
+    } catch (error) {
+      console.error('Login callback failed:', error);
     }
   };
 
