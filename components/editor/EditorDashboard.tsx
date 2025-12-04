@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Project, Role, WorkflowStage, TaskStatus } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import { Calendar as CalendarIcon, Upload, Video, Film } from 'lucide-react';
@@ -15,8 +15,24 @@ interface Props {
 }
 
 const EditorDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) => {
-    const [activeView, setActiveView] = useState<string>('dashboard');
+    const viewStorageKey = `activeView:${user.role}`;
+    const getStoredView = () => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return localStorage.getItem(viewStorageKey) || 'dashboard';
+    };
+    const [activeView, setActiveView] = useState<string>(getStoredView);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+    const handleViewChange = (view: string) => {
+        setActiveView(view);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(viewStorageKey, view);
+        }
+    };
+
+    useEffect(() => {
+        setActiveView(getStoredView());
+    }, [viewStorageKey]);
 
     // Mock data - Projects assigned to Editor
     const mockProjects: Project[] = [
@@ -89,7 +105,7 @@ const EditorDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout 
             onLogout={onLogout}
             onOpenCreate={() => { }}
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={handleViewChange}
         >
             {selectedProject ? (
                 <EditorProjectDetail

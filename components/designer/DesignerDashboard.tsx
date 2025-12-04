@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Project, Role, WorkflowStage, TaskStatus } from '../../types';
 import { Palette, Video, FileImage } from 'lucide-react';
 import DesignerMyWork from './DesignerMyWork';
@@ -14,8 +14,24 @@ interface Props {
 }
 
 const DesignerDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) => {
-    const [activeView, setActiveView] = useState<string>('dashboard');
+    const viewStorageKey = `activeView:${user.role}`;
+    const getStoredView = () => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return localStorage.getItem(viewStorageKey) || 'dashboard';
+    };
+    const [activeView, setActiveView] = useState<string>(getStoredView);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+    const handleViewChange = (view: string) => {
+        setActiveView(view);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(viewStorageKey, view);
+        }
+    };
+
+    useEffect(() => {
+        setActiveView(getStoredView());
+    }, [viewStorageKey]);
 
     // Mock data - Projects assigned to Designer (both types)
     const mockProjects: Project[] = [
@@ -91,7 +107,7 @@ const DesignerDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogou
             onLogout={onLogout}
             onOpenCreate={() => { }}
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={handleViewChange}
         >
             {selectedProject ? (
                 <DesignerProjectDetail
@@ -153,7 +169,7 @@ const DesignerDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogou
                         </h2>
                         <p className="text-slate-600">
                             You have {activeProjects.length} active design {activeProjects.length === 1 ? 'task' : 'tasks'}.
-                            Click <button onClick={() => setActiveView('mywork')} className="text-blue-600 font-bold underline">My Work</button> to manage them.
+                            Click <button onClick={() => handleViewChange('mywork')} className="text-blue-600 font-bold underline">My Work</button> to manage them.
                         </p>
                     </div>
                 </div>

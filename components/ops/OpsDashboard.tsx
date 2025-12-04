@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Project, Role, WorkflowStage, TaskStatus } from '../../types';
 import { Calendar, Upload, Link as LinkIcon } from 'lucide-react';
 import OpsMyWork from './OpsMyWork';
@@ -14,8 +14,24 @@ interface Props {
 }
 
 const OpsDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) => {
-    const [activeView, setActiveView] = useState<string>('dashboard');
+    const viewStorageKey = `activeView:${user.role}`;
+    const getStoredView = () => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return localStorage.getItem(viewStorageKey) || 'dashboard';
+    };
+    const [activeView, setActiveView] = useState<string>(getStoredView);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+
+    const handleViewChange = (view: string) => {
+        setActiveView(view);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(viewStorageKey, view);
+        }
+    };
+
+    useEffect(() => {
+        setActiveView(getStoredView());
+    }, [viewStorageKey]);
 
     // Mock data - Projects in Ops stage
     const mockProjects: Project[] = [
@@ -127,7 +143,7 @@ const OpsDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) 
             onLogout={onLogout}
             onOpenCreate={() => { }}
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={handleViewChange}
         >
             {selectedProject ? (
                 <OpsProjectDetail

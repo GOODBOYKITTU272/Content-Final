@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import Lottie from 'lottie-react';
 import { db } from './services/supabaseDb';
 import { User, Project, Channel, Role } from './types';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import CreateProjectModal from './components/CreateProjectModal';
+import mindReloadAnimation from './public/animations/mind-reload.json';
 
 // Admin Imports
 import AdminLayout, { AdminView } from './components/AdminLayout';
@@ -38,11 +40,13 @@ import DesignerDashboard from './components/designer/DesignerDashboard';
 // Ops Imports
 import OpsDashboard from './components/ops/OpsDashboard';
 
+// Observer Imports
+import ObserverDashboard from './components/observer/ObserverDashboard';
+
 function App() {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(5);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
@@ -92,18 +96,6 @@ function App() {
 
     initializeAuth();
   }, []);
-
-  // Countdown loader while checking session
-  useEffect(() => {
-    if (!loading) return;
-
-    setCountdown(5);
-    const timer = setInterval(() => {
-      setCountdown(prev => (prev > 1 ? prev - 1 : 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [loading]);
 
   const refreshData = async (u: User = user!) => {
     if (!u) return;
@@ -158,11 +150,11 @@ function App() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center space-y-4">
-          <div className="w-24 h-24 rounded-full border-4 border-black flex items-center justify-center bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-            <span className="text-4xl font-black text-slate-900">{countdown}</span>
+        <div className="text-center space-y-6">
+          <div className="w-48 h-48 mx-auto">
+            <Lottie animationData={mindReloadAnimation} loop={true} />
           </div>
-          <p className="text-slate-600 font-medium uppercase tracking-wide">Preparing your session</p>
+          <p className="text-slate-700 font-bold uppercase tracking-wide text-lg">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -281,6 +273,11 @@ function App() {
         onLogout={handleLogout}
       />
     );
+  }
+
+  // --- OBSERVER FLOW ---
+  if (user.role === Role.OBSERVER) {
+    return <ObserverDashboard user={user} onLogout={handleLogout} />;
   }
 
   // --- STANDARD WORKFLOW FLOW (fallback) ---

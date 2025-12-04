@@ -7,6 +7,7 @@ export enum Role {
   CMO = 'CMO',
   CEO = 'CEO',
   OPS = 'OPS',
+  OBSERVER = 'OBSERVER',
 }
 
 export enum Channel {
@@ -50,6 +51,7 @@ export interface User {
   email: string;
   full_name: string;
   role: Role;
+  job_title?: string;  // For OBSERVER role: COO, CRO, CTO, CFO, etc.
   avatar_url?: string;
   status: UserStatus;
   last_login?: string;
@@ -119,6 +121,19 @@ export const ROLE_LABELS: Record<Role, string> = {
   [Role.CMO]: 'CMO (Approver)',
   [Role.CEO]: 'CEO (Approver)',
   [Role.OPS]: 'Operations',
+  [Role.OBSERVER]: 'Observer (View-Only)',
+};
+
+export const OBSERVER_TITLES: Record<string, string> = {
+  COO: 'Chief Operating Officer',
+  CRO: 'Chief Revenue Officer',
+  CTO: 'Chief Technology Officer',
+  CFO: 'Chief Financial Officer',
+  BOARD: 'Board Member',
+  VP: 'Vice President',
+  SVP: 'Senior Vice President',
+  DIRECTOR: 'Director',
+  OTHER: 'Other Executive'
 };
 
 export const STAGE_LABELS: Record<WorkflowStage, string> = {

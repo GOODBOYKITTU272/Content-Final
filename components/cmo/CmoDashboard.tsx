@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Project, Role, TaskStatus, STAGE_LABELS, WorkflowStage } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import { RotateCcw } from 'lucide-react';
@@ -17,8 +17,24 @@ interface Props {
 const CmoDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) => {
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [tab, setTab] = useState<'PENDING' | 'ALL'>('PENDING');
-    const [activeView, setActiveView] = useState<string>('dashboard');
+    const viewStorageKey = `activeView:${user.role}`;
+    const getStoredView = () => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return localStorage.getItem(viewStorageKey) || 'dashboard';
+    };
+    const [activeView, setActiveView] = useState<string>(getStoredView);
     const [activeFilter, setActiveFilter] = useState<'ALL' | 'PENDING_L1' | 'WITH_CEO' | 'REWORKS' | null>(null);
+
+    const handleViewChange = (view: string) => {
+        setActiveView(view);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(viewStorageKey, view);
+        }
+    };
+
+    useEffect(() => {
+        setActiveView(getStoredView());
+    }, [viewStorageKey]);
 
     // Filter Logic:
     // Pending L1 Reviews - Projects assigned to CMO for L1 review
@@ -97,7 +113,7 @@ const CmoDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout }) 
             onLogout={onLogout}
             onOpenCreate={() => { }} // CMO cannot create
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={handleViewChange}
         >
             {activeView === 'mywork' ? (
                 <CmoMyWork user={user} projects={projects} onReview={handleReview} />

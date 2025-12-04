@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Project, Role, TaskStatus, STAGE_LABELS } from '../../types';
 import { Plus, Clock } from 'lucide-react';
 import CreateScript from './CreateScript';
@@ -20,7 +20,23 @@ const WriterDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout 
     const [isCreating, setIsCreating] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [viewingProject, setViewingProject] = useState<Project | null>(null);
-    const [activeView, setActiveView] = useState<string>('dashboard');
+    const viewStorageKey = `activeView:${user.role}`;
+    const getStoredView = () => {
+        if (typeof window === 'undefined') return 'dashboard';
+        return localStorage.getItem(viewStorageKey) || 'dashboard';
+    };
+    const [activeView, setActiveView] = useState<string>(getStoredView);
+
+    const handleViewChange = (view: string) => {
+        setActiveView(view);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(viewStorageKey, view);
+        }
+    };
+
+    useEffect(() => {
+        setActiveView(getStoredView());
+    }, [viewStorageKey]);
 
     // Categorize Projects
     const drafts = projects.filter(p => p.assigned_to_role === Role.WRITER && (p.status === TaskStatus.TODO || p.status === TaskStatus.IN_PROGRESS || p.status === TaskStatus.REJECTED));
@@ -61,7 +77,7 @@ const WriterDashboard: React.FC<Props> = ({ user, projects, onRefresh, onLogout 
             onLogout={onLogout}
             onOpenCreate={() => setIsCreating(true)}
             activeView={activeView}
-            onChangeView={setActiveView}
+            onChangeView={handleViewChange}
         >
             {activeView === 'mywork' && <WriterMyWork user={user} projects={projects} />}
             {activeView === 'calendar' && <WriterCalendar projects={projects} />}
