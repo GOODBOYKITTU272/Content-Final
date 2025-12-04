@@ -147,7 +147,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                                     <input
                                         type="email"
                                         value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
+                                        onChange={(e) => setEmail(e.target.value.toLowerCase())}
                                         placeholder="you@applywizz.com"
                                         required
                                         className="w-full pl-12 pr-4 py-4 border-2 border-slate-300 rounded-none focus:border-black focus:ring-0 bg-slate-50 outline-none transition-all font-medium"
