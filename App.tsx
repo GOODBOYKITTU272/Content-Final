@@ -57,91 +57,24 @@ function App() {
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [adminLogs, setAdminLogs] = useState<any[]>([]);
 
-  // Session restoration on mount
+  // Session restoration on mount - Simplified approach using only auth listener
   useEffect(() => {
-    const withTimeout = <T,>(promise: Promise<T>, ms: number, name: string) => {
-      return Promise.race([
-        promise,
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`${name} timed out after ${ms}ms`)), ms)
-        )
-      ]);
-    };
+    let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        console.log('Starting session initialization...');
-        
-        // First check if there's a session
-        const { data: { session }, error: sessionError } = await withTimeout(
-          supabase.auth.getSession(),
-          10000,
-          'getSession'
-        );
-        
-        if (sessionError) {
-          console.warn('Session check error:', sessionError);
-        }
-
-        if (session) {
-          console.log('Active session found, fetching user data...');
-          try {
-            const { data: { user: authUser }, error: userError } = await withTimeout(
-              supabase.auth.getUser(),
-              10000,
-              'getUser'
-            );
-            
-            if (userError) {
-              console.warn('Get user error:', userError);
-            }
-
-            if (authUser && authUser.email) {
-              try {
-                const fullUser = await withTimeout(
-                  db.users.getByEmail(authUser.email),
-                  10000,
-                  'getByEmail'
-                );
-                
-                if (fullUser) {
-                  console.log('User authenticated and set:', fullUser.full_name);
-                  setUser(fullUser);
-                  await refreshData(fullUser);
-                } else {
-                  console.warn('User not found in database for email:', authUser.email);
-                }
-              } catch (dbError) {
-                console.warn('Database user fetch error:', dbError);
-              }
-            }
-          } catch (authError) {
-            console.warn('Auth user fetch error:', authError);
-          }
-        } else {
-          console.log('No active session found');
-        }
-      } catch (error) {
-        console.error('Session restoration failed:', error);
-      } finally {
-        setLoading(false);
-        console.log('Session initialization complete');
-      }
-    };
-
-    initializeAuth();
-    
-    // Also listen for auth state changes
+    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', event, session);
       
+      if (!mounted) return;
+
       switch (event) {
         case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
           if (session?.user) {
             try {
               const fullUser = await db.users.getByEmail(session.user.email!);
-              if (fullUser) {
-                console.log('User signed in:', fullUser.full_name);
+              if (fullUser && mounted) {
+                console.log('User authenticated and set:', fullUser.full_name);
                 setUser(fullUser);
                 await refreshData(fullUser);
               }
@@ -153,50 +86,34 @@ function App() {
           
         case 'SIGNED_OUT':
           console.log('User signed out');
-          setUser(null);
-          setProjects([]);
-          setAdminUsers([]);
-          setAdminLogs([]);
-          setAdminView('DASH');
-          localStorage.removeItem('admin_last_view');
+          if (mounted) {
+            setUser(null);
+            setProjects([]);
+            setAdminUsers([]);
+            setAdminLogs([]);
+            setAdminView('DASH');
+            localStorage.removeItem('admin_last_view');
+          }
           break;
           
-        case 'TOKEN_REFRESHED':
-          console.log('Token refreshed, refreshing session cache');
-          // Refresh our user cache when token is refreshed
-          await db.refreshSession();
+        default:
           break;
+      }
+      
+      if (mounted) {
+        setLoading(false);
       }
     });
 
     // Cleanup listener on unmount
     return () => {
+      mounted = false;
       if (authListener?.subscription) {
         authListener.subscription.unsubscribe();
       }
     };
   }, []);
-
-  // Periodic session check to maintain session state
-  useEffect(() => {
-    if (!user) return;
-    
-    const interval = setInterval(async () => {
-      try {
-        // Check if session is still valid
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.log('Session expired, triggering sign out');
-          setUser(null);
-        }
-      } catch (error) {
-        console.warn('Periodic session check failed:', error);
-      }
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(interval);
-  }, [user]);
-
+  
   // Save admin view to localStorage when it changes
   useEffect(() => {
     if (user?.role === Role.ADMIN && adminView) {

@@ -811,52 +811,10 @@ export const helpers = {
 
 // Session management (mimics mockDb behavior)
 let currentUserCache: User | null = null;
-let sessionRestored = false;
-
-// Initialize current user from Supabase session
-const initializeCurrentUser = async () => {
-    if (sessionRestored) return; // Prevent multiple initializations
-    
-    try {
-        console.log('Initializing current user from session...');
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-            console.log('Found active session, fetching user data...');
-            // Get full user data from users table
-            const { data, error } = await supabase
-                .from('users')
-                .select('*')
-                .eq('email', session.user.email)
-                .single();
-                
-            if (error) {
-                console.warn('Error fetching user data:', error);
-                return;
-            }
-            
-            if (data) {
-                currentUserCache = data as User;
-                console.log('User cache initialized:', currentUserCache?.full_name);
-            }
-        } else {
-            console.log('No active session found during initialization');
-        }
-    } catch (error) {
-        console.warn('Failed to initialize current user from session:', error);
-    } finally {
-        sessionRestored = true;
-    }
-};
-
-// Auto-initialize with better error handling
-initializeCurrentUser().catch(error => {
-    console.warn('Auto-initialization failed:', error);
-});
 
 // Listen for auth changes with improved handling
 supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state change detected:', event);
+    console.log('DB Auth state change detected:', event);
     
     switch (event) {
         case 'SIGNED_IN':
@@ -875,7 +833,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                     
                     if (data) {
                         currentUserCache = data as User;
-                        console.log('User signed in and cached:', currentUserCache?.full_name);
+                        console.log('DB: User signed in and cached:', currentUserCache?.full_name);
                     }
                 } catch (error) {
                     console.warn('Error processing sign in:', error);
@@ -884,22 +842,22 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             break;
             
         case 'SIGNED_OUT':
-            console.log('User signed out, clearing cache');
+            console.log('DB: User signed out, clearing cache');
             currentUserCache = null;
             break;
             
         case 'TOKEN_REFRESHED':
-            console.log('Token refreshed');
+            console.log('DB: Token refreshed');
             // Optionally re-fetch user data if needed
             break;
             
         case 'USER_UPDATED':
-            console.log('User updated');
+            console.log('DB: User updated');
             // Optionally re-fetch user data if needed
             break;
             
         default:
-            console.log('Other auth event:', event);
+            console.log('DB: Other auth event:', event);
     }
 });
 
@@ -929,7 +887,7 @@ export const db = {
 
     async refreshSession(): Promise<boolean> {
         try {
-            console.log('Manually refreshing session...');
+            console.log('DB: Manually refreshing session...');
             const { data: { session } } = await supabase.auth.getSession();
             
             if (session?.user) {
@@ -940,23 +898,23 @@ export const db = {
                     .single();
                     
                 if (error) {
-                    console.warn('Error fetching user during session refresh:', error);
+                    console.warn('DB: Error fetching user during session refresh:', error);
                     return false;
                 }
                 
                 if (data) {
                     currentUserCache = data as User;
-                    console.log('Session refreshed successfully for:', currentUserCache.full_name);
+                    console.log('DB: Session refreshed successfully for:', currentUserCache.full_name);
                     return true;
                 }
             } else {
-                console.log('No active session to refresh');
+                console.log('DB: No active session to refresh');
                 currentUserCache = null;
             }
             
             return false;
         } catch (error) {
-            console.error('Session refresh failed:', error);
+            console.error('DB: Session refresh failed:', error);
             return false;
         }
     },
@@ -964,10 +922,8 @@ export const db = {
     async login(email: string, password: string): Promise<User> {
         try {
             // Real authentication using Supabase
-            const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
+            console.log('Login: calling signInWithPassword...');
+            const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
             if (signInError) {
                 throw new Error(signInError.message);
@@ -978,21 +934,22 @@ export const db = {
             }
 
             // Get full user details
-            const { data, error: fetchError } = await supabase
+            console.log('Login: fetching user profile...');
+            const userData = await supabase
                 .from('users')
                 .select('*')
                 .eq('email', email)
                 .single();
 
-            if (fetchError) {
-                throw new Error(`User profile fetch failed: ${fetchError.message}`);
+            if (userData.error) {
+                throw new Error(`User profile fetch failed: ${userData.error.message}`);
             }
 
-            if (!data) {
+            if (!userData.data) {
                 throw new Error('User profile not found in database');
             }
 
-            currentUserCache = data as User;
+            currentUserCache = userData.data as User;
             console.log('User logged in and cached:', currentUserCache.full_name);
             
             // Update last login
@@ -1005,7 +962,7 @@ export const db = {
                 console.warn('Failed to update last login timestamp:', updateError);
             }
             
-            return data as User;
+            return userData.data as User;
         } catch (error) {
             console.error('Login error:', error);
             throw error;
