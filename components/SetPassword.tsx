@@ -58,12 +58,18 @@ const SetPassword: React.FC = () => {
         setLoading(true);
 
         try {
+            console.log('=== PASSWORD RESET START ===');
+            console.log('Email:', email);
+            console.log('Password length:', password.length);
+
             // Update password using Supabase
+            console.log('Calling supabase.auth.updateUser...');
             const { error: updateError } = await supabase.auth.updateUser({
                 password: password
             });
 
             if (updateError) {
+                console.error('UpdateUser error:', updateError);
                 throw updateError;
             }
 
@@ -73,6 +79,7 @@ const SetPassword: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 500));
 
             // Try to verify session (for invitation links) or just proceed (for password reset links)
+            console.log('Getting session...');
             const { data: { session } } = await supabase.auth.getSession();
 
             if (session) {
@@ -98,7 +105,12 @@ const SetPassword: React.FC = () => {
                 }
             }, 2500);
         } catch (err: any) {
-            console.error('Error setting password:', err);
+            console.error('=== PASSWORD RESET ERROR ===');
+            console.error('Error object:', err);
+            console.error('Error message:', err.message);
+            console.error('Error name:', err.name);
+            console.error('Error status:', err.status);
+
             if (err.message?.includes('session') || err.message?.includes('token')) {
                 setError('Your reset link has expired. Please request a new password reset.');
                 setTokenError(true);
