@@ -68,8 +68,20 @@ const SetPassword: React.FC = () => {
 
             console.log('Password set successfully for:', email);
 
-            // Redirect to dashboard (user is already logged in via invite link)
-            navigate('/');
+            // IMPORTANT: Wait a moment for Supabase to finalize the session
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Verify the session is active
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                throw new Error('Failed to establish session after password update');
+            }
+
+            console.log('Session verified, redirecting to dashboard...');
+
+            // Force a complete page reload to ensure clean state
+            window.location.href = '/';
         } catch (err: any) {
             console.error('Error setting password:', err);
             if (err.message?.includes('session') || err.message?.includes('token')) {
