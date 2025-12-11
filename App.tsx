@@ -221,7 +221,7 @@ function App() {
     }
   }, [adminView, user]);
 
-  // Block keyboard refresh shortcuts (F5, Ctrl+R) while allowing browser reload button
+  // Block keyboard refresh shortcuts (F5, Ctrl+R) while allowing browser reload button with confirmation
   useEffect(() => {
     if (!user) return; // Only block when user is logged in
 
@@ -230,25 +230,42 @@ function App() {
       if (e.key === 'F5') {
         e.preventDefault();
         e.stopPropagation();
-        alert('⚠️ Keyboard refresh is disabled.\n\nPlease use the browser reload button if needed.');
+        alert('⚠️ Keyboard refresh is disabled.\n\nPlease use the browser reload button or logout.');
         return false;
       }
-      // Ctrl+R or Ctrl+Shift+R
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R')) {
+      // Ctrl+Shift+R (Hard reload)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'r' || e.key === 'R')) {
         e.preventDefault();
         e.stopPropagation();
-        alert('⚠️ Keyboard refresh is disabled.\n\nPlease use the browser reload button if needed.');
+        alert('❌ Hard reload is disabled.\n\nPlease logout if you need to refresh your session.');
         return false;
       }
+      // Ctrl+R
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        e.stopPropagation();
+        alert('⚠️ Keyboard refresh is disabled.\n\nPlease use the browser reload button or logout.');
+        return false;
+      }
+    };
+
+    // Handler for browser reload button
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      // Modern browsers require returnValue to be set
+      e.returnValue = 'Are you sure you want to reload? Your session will be preserved.';
+      return e.returnValue;
     };
 
     // Add listeners
     window.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [user]);
 
