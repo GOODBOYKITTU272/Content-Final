@@ -69,17 +69,19 @@ const SetPassword: React.FC = () => {
 
             console.log('Password set successfully for:', email);
 
-            // IMPORTANT: Wait a moment for Supabase to finalize the session
+            // IMPORTANT: Wait a moment for Supabase to finalize the update
             await new Promise(resolve => setTimeout(resolve, 500));
 
-            // Verify the session is active
+            // Try to verify session (for invitation links) or just proceed (for password reset links)
             const { data: { session } } = await supabase.auth.getSession();
 
-            if (!session) {
-                throw new Error('Failed to establish session after password update');
+            if (session) {
+                console.log('Session verified, user is logged in');
+            } else {
+                console.log('No session (password reset flow), user will need to login');
             }
 
-            console.log('Session verified, redirecting to dashboard...');
+            console.log('Password update complete, redirecting...');
 
             // Show success message
             setSuccess(true);
@@ -87,12 +89,18 @@ const SetPassword: React.FC = () => {
 
             // Wait 2.5 seconds to show success, then redirect
             setTimeout(() => {
-                window.location.href = '/';
+                if (session) {
+                    // User from invitation - redirect to dashboard (already logged in)
+                    window.location.href = '/';
+                } else {
+                    // User from password reset - redirect to login page
+                    window.location.href = '/?pwd_reset=success';
+                }
             }, 2500);
         } catch (err: any) {
             console.error('Error setting password:', err);
             if (err.message?.includes('session') || err.message?.includes('token')) {
-                setError('Your invitation link has expired. Please request a new invitation from the administrator.');
+                setError('Your reset link has expired. Please request a new password reset.');
                 setTokenError(true);
             } else {
                 setError(err.message || 'Failed to set password');
