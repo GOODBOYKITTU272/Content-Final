@@ -25,6 +25,15 @@ const Auth: React.FC<AuthProps> = ({ onLogin, isRestoringSession }) => {
 
         try {
             if (email && password) {
+                // Clear any old localStorage data before login to ensure clean state
+                // Keep only essential keys, clear everything else
+                const keysToKeep = new Set(['admin_last_view']);
+                Object.keys(localStorage).forEach(key => {
+                    if (!keysToKeep.has(key) && !key.startsWith('sb-')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+
                 // Login and get user object
                 const user = await db.login(email, password);
 
