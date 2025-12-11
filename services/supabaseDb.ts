@@ -163,50 +163,71 @@ export const auth = {
 
             // Call the Edge Function (service key is secure on server)
             console.log('Calling Edge Function at:', `${supabaseUrl}/functions/v1/invite-user`);
-            const response = await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email, userData })
-            });
 
-            console.log('Edge Function response status:', response.status);
+            // Add timeout to prevent hanging forever
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Edge Function error response:', errorText);
-                let errorMessage;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    errorMessage = errorJson.error || 'Failed to invite user';
-                } catch {
-                    errorMessage = errorText || 'Failed to invite user';
-                }
-
-                // Fallback: create user directly so the admin can proceed even if the edge function fails
-                console.warn('Invite failed, falling back to direct user creation. No email will be sent.');
-                const createdUser = await users.create({
-                    email,
-                    full_name: userData.full_name,
-                    role: userData.role,
-                    phone: userData.phone,
-                    status: UserStatus.ACTIVE
+            try {
+                const response = await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, userData }),
+                    signal: controller.signal
                 });
 
-                return {
-                    user: createdUser,
-                    fallback: true,
-                    warning: `Invite email not sent: ${errorMessage}`
-                };
+                clearTimeout(timeoutId);
+                console.log('Edge Function response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Edge Function error response:', errorText);
+                    let errorMessage;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || 'Failed to invite user';
+                    } catch {
+                        errorMessage = errorText || 'Failed to invite user';
+                    }
+
+                    // Fallback: create user directly so the admin can proceed even if the edge function fails
+                    console.warn('Invite failed, falling back to direct user creation. No email will be sent.');
+                    const createdUser = await users.create({
+                        email,
+                        full_name: userData.full_name,
+                        role: userData.role,
+                        phone: userData.phone,
+                        status: UserStatus.ACTIVE
+                    });
+
+                    return {
+                        user: createdUser,
+                        fallback: true,
+                        warning: `Invite email not sent: ${errorMessage}`
+                    };
+                }
+
+                const data = await response.json();
+                console.log('Edge Function success:', data);
+
+                // Return the full response data, not just the user
+                return data;
+
+            } catch (fetchError: any) {
+                clearTimeout(timeoutId);
+
+                // Handle timeout specifically
+                if (fetchError.name === 'AbortError') {
+                    console.error('Edge Function timeout after 30 seconds');
+                    throw new Error('Invitation service timed out. Please try again or contact support.');
+                }
+
+                // Re-throw other errors
+                throw fetchError;
             }
-
-            const data = await response.json();
-            console.log('Edge Function success:', data);
-
-            // Return the full response data, not just the user
-            return data;
         } catch (error: any) {
             console.error('inviteUser error:', error);
             throw error;
