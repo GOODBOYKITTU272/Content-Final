@@ -103,8 +103,8 @@ const SetPassword: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-            <div className="bg-white border-2 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md relative">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-2 sm:p-4">
+            <div className="bg-white border-2 border-black p-4 sm:p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md relative my-auto max-h-[95vh] overflow-y-auto">
 
                 {/* Success Popup Overlay */}
                 {success && (
@@ -112,7 +112,7 @@ const SetPassword: React.FC = () => {
                         <div className="w-24 h-24 bg-green-500 border-4 border-black rounded-full flex items-center justify-center mb-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-bounce-in">
                             <CheckCircle className="w-16 h-16 text-white" strokeWidth={3} />
                         </div>
-                        <h2 className="text-3xl font-black uppercase mb-3">Success!</h2>
+                        <h2 className="text-2xl sm:text-3xl font-black uppercase mb-3">Success!</h2>
                         <p className="text-slate-600 font-bold text-center mb-2">
                             Your password has been set successfully
                         </p>
@@ -127,7 +127,7 @@ const SetPassword: React.FC = () => {
                     <div className="w-20 h-20 bg-green-500 border-2 border-black mx-auto flex items-center justify-center mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <Lock className="w-10 h-10 text-white" />
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight mb-3">Welcome!</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black uppercase tracking-tight mb-2 sm:mb-3">Welcome!</h1>
                     <p className="text-slate-600 font-medium">
                         You have been invited to join as <span className="font-bold text-black">{role}</span>
                     </p>
@@ -160,7 +160,7 @@ const SetPassword: React.FC = () => {
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="Enter your password"
                                 required
-                                className="w-full px-4 py-4 pr-12 border-2 border-slate-300 rounded-none focus:border-black focus:ring-0 bg-slate-50 outline-none transition-all font-medium"
+                                className="w-full px-4 py-3 sm:py-4 pr-12 border-2 border-slate-300 rounded-none focus:border-black focus:ring-0 bg-slate-50 outline-none transition-all font-medium text-base min-h-[48px]"
                             />
                             <button
                                 type="button"

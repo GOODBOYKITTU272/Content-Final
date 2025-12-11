@@ -85,13 +85,13 @@ const Auth: React.FC<AuthProps> = ({ onLogin, isRestoringSession }) => {
             {/* Hero Section */}
             <div className="flex-1 flex flex-col items-center justify-center px-4 pt-24 pb-20 text-center max-w-7xl mx-auto w-full">
 
-                <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-8 uppercase flex flex-col items-center select-none">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] mb-6 sm:mb-8 uppercase flex flex-col items-center select-none">
                     <span>Content</span>
                     <span>Production</span>
                     <span className="bg-black text-white px-6 py-2 transform -rotate-2 mt-4 inline-block shadow-lg">Chaos Tamed</span>
                 </h1>
 
-                <p className="text-lg md:text-xl font-medium max-w-2xl mb-10 leading-relaxed text-slate-800">
+                <p className="text-base sm:text-lg md:text-xl font-medium max-w-2xl mb-8 sm:mb-10 leading-relaxed text-slate-800 px-2">
                     The internal workflow system for high-velocity marketing teams.
                     Script, shoot, edit, approve, and publish without the mess.
                 </p>
@@ -99,7 +99,7 @@ const Auth: React.FC<AuthProps> = ({ onLogin, isRestoringSession }) => {
                 <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto justify-center">
                     <button
                         onClick={() => setShowLoginModal(true)}
-                        className="bg-[#D946EF] border-2 border-black px-12 py-5 text-white font-black text-xl flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-wide w-full sm:w-auto"
+                        className="bg-[#D946EF] border-2 border-black px-8 sm:px-12 py-4 sm:py-5 text-white font-black text-lg sm:text-xl flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all uppercase tracking-wide w-full sm:w-auto min-h-[48px]"
                     >
                         Start Production <ArrowRight className="ml-3 w-6 h-6" />
                     </button>
@@ -146,8 +146,8 @@ const Auth: React.FC<AuthProps> = ({ onLogin, isRestoringSession }) => {
 
             {/* Login Modal */}
             {showLoginModal && !showResetPassword && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-                    <div className="bg-white border-2 border-black p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md relative animate-fade-in-up">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-fade-in overflow-y-auto">
+                    <div className="bg-white border-2 border-black p-4 sm:p-8 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md relative animate-fade-in-up my-auto max-h-[90vh] overflow-y-auto">
                         <button
                             onClick={() => setShowLoginModal(false)}
                             className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-full transition-colors"
