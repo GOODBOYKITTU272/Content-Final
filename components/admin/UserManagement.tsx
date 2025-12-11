@@ -29,11 +29,11 @@ const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate })
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-                <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+            <div className="flex flex-col gap-4">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Users</h1>
                 <button
                     onClick={() => onNavigate('USER_ADD')}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium flex items-center shadow-md shadow-red-100"
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-3 sm:py-2 rounded-lg font-medium flex items-center justify-center shadow-md shadow-red-100 w-full sm:w-auto min-h-[48px]"
                 >
                     <Plus className="w-5 h-5 mr-2" />
                     Add User
@@ -76,8 +76,12 @@ const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate })
 
             {/* Users Table */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                {/* Mobile: Show hint for horizontal scroll */}
+                <div className="md:hidden bg-slate-50 px-4 py-2 text-xs text-slate-500 border-b border-slate-200">
+                    ← Swipe to see more →
+                </div>
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[640px]">
                         <thead className="bg-slate-50 border-b border-slate-200">
                             <tr>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
@@ -119,7 +123,7 @@ const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate })
                                         <div className="flex items-center justify-end space-x-2">
                                             <button
                                                 onClick={() => setEditingUser(user)}
-                                                className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                                                className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-2 rounded hover:bg-blue-50 transition-colors min-h-[44px]"
                                             >
                                                 Edit
                                             </button>
@@ -135,7 +139,7 @@ const UserManagement: React.FC<Props> = ({ users, logs, onRefresh, onNavigate })
                                                         }
                                                     }
                                                 }}
-                                                className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                                className="text-red-600 hover:text-red-800 p-2 rounded hover:bg-red-50 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                                                 title="Delete User"
                                             >
                                                 <Trash2 className="w-4 h-4" />
