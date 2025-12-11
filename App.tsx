@@ -309,6 +309,9 @@ function App() {
     setAdminView('DASH');
     localStorage.removeItem('admin_last_view');
 
+    // Clear all Supabase tokens immediately
+    clearAllTokens();
+
     // Do cleanup in background (don't await)
     db.logout().catch(error => {
       console.error('Logout cleanup failed:', error);
