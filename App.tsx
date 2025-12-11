@@ -98,7 +98,11 @@ function App() {
 
       if (sessionError) {
         console.warn('Session check error:', sessionError);
-        clearAllTokens();
+        // Only clear if it's an auth error (invalid token), not network/other errors
+        if (sessionError.message?.includes('invalid') || sessionError.message?.includes('expired')) {
+          console.log('Token is invalid/expired, clearing...');
+          clearAllTokens();
+        }
         return;
       }
 
@@ -111,19 +115,25 @@ function App() {
             await refreshData(fullUser);
           } else {
             console.warn('User not found in database for email:', session.user.email);
+            // User exists in auth but not in database - this is a real problem, clear session
             await supabase.auth.signOut();
             clearAllTokens();
           }
         } catch (dbError) {
           console.error('Error fetching user from database:', dbError);
-          clearAllTokens();
+          // DON'T clear tokens on database errors - might be temporary network issue
+          // Just log the error and show login screen
         }
       } else {
         console.log('No active session found');
       }
     } catch (error: any) {
       console.error('Session restoration failed:', error);
-      clearAllTokens();
+      // DON'T clear tokens on all errors - only on auth-specific errors
+      if (error.message?.includes('invalid') || error.message?.includes('expired') || error.message?.includes('token')) {
+        console.log('Auth error detected, clearing tokens');
+        clearAllTokens();
+      }
     }
   };
 
@@ -155,9 +165,7 @@ function App() {
         await restoreSession();
       } catch (error) {
         console.error('Initialization error:', error);
-        if (mounted) {
-          clearAllTokens();
-        }
+        // Don't clear tokens here - restoreSession handles it internally
       } finally {
         // ALWAYS set these, even on error
         if (mounted) {
