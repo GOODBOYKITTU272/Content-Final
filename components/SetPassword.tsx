@@ -13,6 +13,7 @@ const SetPassword: React.FC = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false); // NEW: Show success popup
     const [tokenError, setTokenError] = useState(false);
 
     // Get email from URL params (sent in invitation email)
@@ -80,8 +81,14 @@ const SetPassword: React.FC = () => {
 
             console.log('Session verified, redirecting to dashboard...');
 
-            // Force a complete page reload to ensure clean state
-            window.location.href = '/';
+            // Show success message
+            setSuccess(true);
+            setLoading(false);
+
+            // Wait 2.5 seconds to show success, then redirect
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 2500);
         } catch (err: any) {
             console.error('Error setting password:', err);
             if (err.message?.includes('session') || err.message?.includes('token')) {
@@ -97,7 +104,23 @@ const SetPassword: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-            <div className="bg-white border-2 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md">
+            <div className="bg-white border-2 border-black p-8 md:p-12 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md relative">
+
+                {/* Success Popup Overlay */}
+                {success && (
+                    <div className="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center animate-fade-in">
+                        <div className="w-24 h-24 bg-green-500 border-4 border-black rounded-full flex items-center justify-center mb-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-bounce-in">
+                            <CheckCircle className="w-16 h-16 text-white" strokeWidth={3} />
+                        </div>
+                        <h2 className="text-3xl font-black uppercase mb-3">Success!</h2>
+                        <p className="text-slate-600 font-bold text-center mb-2">
+                            Your password has been set successfully
+                        </p>
+                        <p className="text-sm text-slate-500 text-center">
+                            Redirecting to dashboard...
+                        </p>
+                    </div>
+                )}
 
                 {/* Header */}
                 <div className="text-center mb-8">
