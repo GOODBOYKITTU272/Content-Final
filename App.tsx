@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from './services/supabase';
-import { db } from './services/supabaseDb';
+import { db, tokenHealthCheck } from './services/supabaseDb';
 import { User, Project, Channel, Role } from './types';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -268,6 +268,36 @@ function App() {
       localStorage.setItem('admin_last_view', adminView);
     }
   }, [adminView, user]);
+
+  // Token Health Watchdog - Check for corruption on mount and periodically
+  useEffect(() => {
+    console.log('🛡️  Token Watchdog: Starting health check...');
+
+    // Run health check on mount
+    const health = tokenHealthCheck();
+    console.log('🛡️  Token Watchdog: Health status:', health.status);
+
+    if (!health.healthy) {
+      console.warn('⚠️  Token Watchdog: Unhealthy tokens detected on mount, clearing...');
+      clearAllTokens();
+    }
+
+    // Periodic health check (every 5 minutes when user is logged in)
+    const interval = setInterval(() => {
+      if (!user) return; // Only monitor when logged in
+
+      console.log('🛡️  Token Watchdog: Periodic health check...');
+      const health = tokenHealthCheck();
+
+      if (!health.healthy) {
+        console.error('🔴 Token Watchdog: Token corruption detected during session, forcing logout...');
+        alert('Session corrupted. Logging out for security.');
+        handleLogout();
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Block keyboard refresh shortcuts (F5, Ctrl+R) while allowing browser reload button with confirmation
   useEffect(() => {

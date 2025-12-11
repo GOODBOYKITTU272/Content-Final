@@ -1298,4 +1298,39 @@ export const db = {
 };
 
 // Default export for compatibility
+// ============================================================================
+// TOKEN HEALTH MONITORING
+// ============================================================================
+
+/**
+ * Check if authentication tokens in localStorage are healthy
+ * Returns status indicating if tokens should be cleared
+ */
+export const tokenHealthCheck = (): {
+    healthy: boolean;
+    status: string;
+    action?: 'clear' | 'keep';
+} => {
+    const tokens = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
+
+    if (tokens.length === 0) {
+        return { healthy: true, status: 'no_tokens', action: 'keep' };
+    }
+
+    try {
+        // Check if we can parse token data (validate JSON format)
+        tokens.forEach(key => {
+            const value = localStorage.getItem(key);
+            if (value) {
+                JSON.parse(value); // Validate JSON structure
+            }
+        });
+
+        return { healthy: true, status: 'tokens_valid_format', action: 'keep' };
+    } catch (error) {
+        console.error('🔴 Token Health: Corrupted token detected:', error);
+        return { healthy: false, status: 'tokens_corrupted', action: 'clear' };
+    }
+};
+
 export default db;
