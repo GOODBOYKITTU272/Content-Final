@@ -274,17 +274,18 @@ function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      await db.logout();
-      setUser(null);
-      setProjects([]);
-      setAdminUsers([]);
-      setAdminLogs([]);
-      setAdminView('DASH');
-      localStorage.removeItem('admin_last_view');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    // Clear UI immediately for instant response
+    setUser(null);
+    setProjects([]);
+    setAdminUsers([]);
+    setAdminLogs([]);
+    setAdminView('DASH');
+    localStorage.removeItem('admin_last_view');
+
+    // Do cleanup in background (don't await)
+    db.logout().catch(error => {
+      console.error('Logout cleanup failed:', error);
+    });
   };
 
   const handleCreateProject = async (title: string, channel: Channel, dueDate: string) => {

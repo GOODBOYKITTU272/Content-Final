@@ -18,11 +18,18 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
         sendEmail: true,
         ssoAllowed: false
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (isSubmitting) {
+            console.log('Already submitting, ignoring duplicate');
+            return;
+        }
+
         console.log('Form submitted with data:', formData);
+        setIsSubmitting(true);
 
         try {
             if (formData.sendEmail) {
@@ -30,14 +37,14 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
                 // Use invite function to create user AND send email
                 // Fix: Convert empty phone string to null
                 const phoneValue = formData.phone && formData.phone.trim() !== '' ? formData.phone : null;
-                
+
                 const result = await db.auth.inviteUser(formData.email, {
                     full_name: formData.full_name,
                     role: formData.role,
                     phone: phoneValue
                 });
                 console.log('Invite result:', result);
-                
+
                 // Handle both success and warning cases
                 if (result?.user?.id) {
                     if (result.fallback) {
@@ -58,7 +65,7 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
                 // Just create database record without email
                 // Fix: Convert empty phone string to null
                 const phoneValue = formData.phone && formData.phone.trim() !== '' ? formData.phone : null;
-                
+
                 await db.addUser({
                     full_name: formData.full_name,
                     email: formData.email,
@@ -72,7 +79,7 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
             onUserAdded();
         } catch (error: any) {
             console.error('Error creating user:', error);
-            
+
             // Provide more specific error messages
             let errorMessage = 'Unknown error occurred';
             if (error.message) {
@@ -80,7 +87,7 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
             } else if (typeof error === 'string') {
                 errorMessage = error;
             }
-            
+
             // Check for common Supabase errors
             if (errorMessage.includes('duplicate key value violates unique constraint')) {
                 alert('Error: A user with this email already exists!');
@@ -89,6 +96,8 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
             } else {
                 alert(`Error creating user: ${errorMessage}`);
             }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -262,10 +271,11 @@ const AddUser: React.FC<Props> = ({ onBack, onUserAdded }) => {
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-xl font-bold shadow-lg shadow-slate-200 transition-transform active:scale-95 flex items-center justify-center"
+                            disabled={isSubmitting}
+                            className="flex-1 bg-slate-900 hover:bg-slate-800 text-white p-4 rounded-xl font-bold shadow-lg shadow-slate-200 transition-transform active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save className="w-5 h-5 mr-2" />
-                            Create User
+                            {isSubmitting ? 'Creating...' : 'Create User'}
                         </button>
                     </div>
                 </div>
