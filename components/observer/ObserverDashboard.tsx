@@ -207,21 +207,151 @@ const ObserverDashboard: React.FC<ObserverDashboardProps> = ({ user, onLogout })
                     </div>
                 )}
 
-                {/* Other Views */}
-                {currentView !== 'overview' && (
-                    <div className="bg-white border-2 border-black p-12 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center">
-                        <div className="text-6xl mb-4">{
-                            currentView === 'projects' ? '🗂️' :
-                                currentView === 'approvals' ? '✅' :
-                                    '📅'
-                        }</div>
-                        <h3 className="text-2xl font-black uppercase mb-2">
-                            {currentView === 'projects' ? 'All Projects View' :
-                                currentView === 'approvals' ? 'Approval History' :
-                                    'Publishing Calendar'}
-                        </h3>
-                        <p className="text-slate-600 mb-6">Coming soon in next update...</p>
-                        <p className="text-sm text-slate-500">This view will show detailed {currentView === 'projects' ? 'project list' : currentView === 'approvals' ? 'approval history' : 'content calendar'}</p>
+                {/* All Projects View */}
+                {currentView === 'projects' && (
+                    <div>
+                        <h3 className="text-xl font-black uppercase mb-6">🗂️ All Projects ({projects.length})</h3>
+                        <div className="bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-slate-100 border-b-2 border-black">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-bold uppercase text-sm">Title</th>
+                                            <th className="px-4 py-3 text-left font-bold uppercase text-sm">Channel</th>
+                                            <th className="px-4 py-3 text-left font-bold uppercase text-sm">Stage</th>
+                                            <th className="px-4 py-3 text-left font-bold uppercase text-sm">Status</th>
+                                            <th className="px-4 py-3 text-left font-bold uppercase text-sm">Due Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {projects.map((project, idx) => (
+                                            <tr key={project.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                                                <td className="px-4 py-3 font-medium">{project.title}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className="px-2 py-1 text-xs font-bold bg-purple-100 text-purple-800 rounded">
+                                                        {project.channel}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">{project.current_stage}</td>
+                                                <td className="px-4 py-3">
+                                                    <span className={`px-2 py-1 text-xs font-bold rounded ${project.status === 'DONE' ? 'bg-green-100 text-green-800' :
+                                                            project.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' :
+                                                                project.status === 'WAITING_APPROVAL' ? 'bg-amber-100 text-amber-800' :
+                                                                    'bg-slate-100 text-slate-800'
+                                                        }`}>
+                                                        {project.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3 text-sm">
+                                                    {new Date(project.due_date).toLocaleDateString()}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Approvals View */}
+                {currentView === 'approvals' && (
+                    <div>
+                        <h3 className="text-xl font-black uppercase mb-6">✅ Approval History</h3>
+                        <div className="space-y-4">
+                            {projects.filter(p => p.status === 'WAITING_APPROVAL' || p.status === 'DONE').map((project) => (
+                                <div key={project.id} className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-bold text-lg">{project.title}</h4>
+                                            <p className="text-sm text-slate-600">
+                                                {project.channel} • Stage: {project.current_stage}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className={`px-3 py-1 text-sm font-bold rounded ${project.status === 'DONE' ? 'bg-green-400 text-black' :
+                                                    'bg-amber-400 text-black'
+                                                }`}>
+                                                {project.status === 'DONE' ? '✓ Approved' : '⏳ Pending'}
+                                            </span>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Due: {new Date(project.due_date).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {projects.filter(p => p.status === 'WAITING_APPROVAL' || p.status === 'DONE').length === 0 && (
+                                <div className="bg-slate-100 border-2 border-black p-8 text-center">
+                                    <p className="text-slate-600">No approval history yet</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Publishing Calendar View */}
+                {currentView === 'calendar' && (
+                    <div>
+                        <h3 className="text-xl font-black uppercase mb-6">📅 Publishing Calendar</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-7 gap-2 mb-6">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                <div key={day} className="bg-slate-900 text-white text-center py-2 font-bold uppercase text-sm border-2 border-black">
+                                    {day}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
+                            {Array.from({ length: 28 }, (_, i) => {
+                                const date = new Date();
+                                date.setDate(date.getDate() - date.getDay() + i);
+                                const dateStr = date.toISOString().split('T')[0];
+                                const dayProjects = projects.filter(p =>
+                                    p.due_date.split('T')[0] === dateStr ||
+                                    (p.post_scheduled_date && p.post_scheduled_date.split('T')[0] === dateStr)
+                                );
+                                const isToday = new Date().toDateString() === date.toDateString();
+
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`min-h-24 p-2 border-2 border-black ${isToday ? 'bg-purple-100 border-purple-600' : 'bg-white'
+                                            }`}
+                                    >
+                                        <div className={`font-bold text-sm mb-1 ${isToday ? 'text-purple-800' : ''}`}>
+                                            {date.getDate()}
+                                            {isToday && <span className="ml-1 text-xs">(Today)</span>}
+                                        </div>
+                                        {dayProjects.map(p => (
+                                            <div
+                                                key={p.id}
+                                                className={`text-xs p-1 mb-1 rounded truncate ${p.channel === 'INSTAGRAM' ? 'bg-pink-200 text-pink-800' :
+                                                        p.channel === 'YOUTUBE' ? 'bg-red-200 text-red-800' :
+                                                            'bg-blue-200 text-blue-800'
+                                                    }`}
+                                                title={p.title}
+                                            >
+                                                {p.title.substring(0, 15)}...
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div className="mt-6 flex gap-4 flex-wrap">
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-pink-200 border border-pink-400"></div>
+                                <span className="text-sm font-medium">Instagram</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-red-200 border border-red-400"></div>
+                                <span className="text-sm font-medium">YouTube</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-blue-200 border border-blue-400"></div>
+                                <span className="text-sm font-medium">LinkedIn</span>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
