@@ -1,5 +1,5 @@
 import { MOCK_USERS, MOCK_PROJECTS, MOCK_SYSTEM_LOGS, getUserPassword } from './mockData';
-import { User, Project, SystemLog, WorkflowHistory, Role, UserStatus, TaskStatus, Priority, Channel, ContentType, WorkflowStage } from '../types';
+import { User, Project, SystemLog, Role, UserStatus, TaskStatus, Channel, WorkflowStage } from '../types';
 
 // ============================================================================
 // IN-MEMORY DATABASE STATE
@@ -413,6 +413,32 @@ export const db = {
       await delay();
       console.log('🔑 Mock password update (noop)');
       return { error: null };
+    },
+    // For AddUser.tsx
+    inviteUser: async (email: string, userData: any) => {
+      await delay();
+      console.log('📧 Mock invite user:', email, userData);
+      const newUser = {
+        id: `user-${userIdCounter++}`,
+        email,
+        full_name: userData.full_name,
+        role: userData.role,
+        phone: userData.phone,
+        status: UserStatus.ACTIVE,
+        last_login: null
+      };
+      users.push(newUser);
+      saveToLocalStorage();
+      return { user: newUser, error: null };
+    },
+    // For UserManagement.tsx
+    deleteUser: async (userId: string) => {
+      await delay();
+      console.log('🗑️ Mock delete user:', userId);
+      const user = users.find(u => u.id === userId);
+      users = users.filter(u => u.id !== userId);
+      saveToLocalStorage();
+      return { error: null };
     }
   },
 
@@ -438,6 +464,9 @@ export const db = {
 
   // Users
   users: usersApi,
+
+  // Projects - nested for components that call db.projects.getAll()
+  projects: projectsApi,
 
   async getUsers() {
     return await usersApi.getAll();
@@ -479,17 +508,17 @@ export const db = {
     return await projectsApi.getByRole(role);
   },
 
-  createProject(title: string, channel: Channel, dueDate: string, contentType: ContentType = ContentType.VIDEO): Project {
+  createProject(title: string, channel: Channel, dueDate: string, contentType: string = 'VIDEO'): Project {
     // Synchronous version for compatibility
     const newProject: Project = {
       id: `proj-${projectIdCounter++}`,
       title,
       channel,
-      content_type: contentType,
+      content_type: contentType as 'VIDEO' | 'CREATIVE_ONLY',
       current_stage: WorkflowStage.SCRIPT,
       assigned_to_role: Role.WRITER,
       status: TaskStatus.TODO,
-      priority: Priority.NORMAL,
+      priority: 'NORMAL',
       due_date: dueDate,
       created_at: new Date().toISOString(),
       data: {},
@@ -550,7 +579,7 @@ export const db = {
 
   // Helpers
   helpers: {
-    getNextStage(currentStage: WorkflowStage, contentType: ContentType, action: 'approve' | 'reject') {
+    getNextStage(currentStage: WorkflowStage, contentType: string, action: 'approve' | 'reject') {
       // Mock workflow logic
       return {
         stage: WorkflowStage.PUBLISHED,
