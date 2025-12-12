@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Project, Role, WorkflowStage, STAGE_LABELS } from '../../types';
-import { db } from '../../services/supabaseDb';
+import { db } from '../../services/mockDb';
 import { ArrowLeft, Check, RotateCcw, X } from 'lucide-react';
 
 interface Props {

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Role, UserStatus } from '../../types';
-import { db } from '../../services/supabaseDb';
+import { db } from '../../services/mockDb';
 import { ArrowLeft, Save, User as UserIcon, Mail, Shield, Smartphone, Bell, Lock } from 'lucide-react';
 
 interface Props {

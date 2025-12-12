@@ -1,355 +1,563 @@
-import { Project, Role, TaskStatus, User, WorkflowStage, Channel, ProjectData, UserStatus, SystemLog, Priority, ContentType } from '../types';
-import { WORKFLOWS, DEMO_USERS } from '../constants';
+import { MOCK_USERS, MOCK_PROJECTS, MOCK_SYSTEM_LOGS, getUserPassword } from './mockData';
+import { User, Project, SystemLog, WorkflowHistory, Role, UserStatus, TaskStatus, Priority, Channel, ContentType, WorkflowStage } from '../types';
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
+// ============================================================================
+// IN-MEMORY DATABASE STATE
+// ============================================================================
 
-// Initial Mock Data
-const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'p1',
-    title: 'Hiring Freeze Post',
-    channel: Channel.LINKEDIN,
-    content_type: 'CREATIVE_ONLY',
-    current_stage: WorkflowStage.SCRIPT_REVIEW_L2, // Currently with CEO
-    assigned_to_role: Role.CEO,
-    status: TaskStatus.WAITING_APPROVAL,
-    priority: 'HIGH',
-    due_date: new Date().toISOString(),
-    created_at: new Date(Date.now() - 10000000).toISOString(),
-    data: {
-      script_content: 'Headline: Why we stopped hiring.\n\nBody: It was a tough decision, but necessary for long term growth. We focused on efficiency over headcount...',
-    },
-    history: [
-      {
-        id: 'h1',
-        stage: WorkflowStage.SCRIPT,
-        actor_id: 'u1',
-        actor_name: 'Alice Writer',
-        action: 'SUBMITTED',
-        timestamp: new Date(Date.now() - 10000000).toISOString()
-      },
-      {
-        id: 'h2',
-        stage: WorkflowStage.SCRIPT_REVIEW_L1,
-        actor_id: 'u2',
-        actor_name: 'Carol CMO',
-        action: 'APPROVED',
-        comment: 'Looks punchy. Sending to CEO.',
-        timestamp: new Date(Date.now() - 5000000).toISOString()
-      }
-    ],
-  },
-  {
-    id: 'p2',
-    title: 'Product Tutorial v1',
-    channel: Channel.YOUTUBE,
-    content_type: 'VIDEO',
-    current_stage: WorkflowStage.SCRIPT_REVIEW_L1, // Currently with CMO
-    assigned_to_role: Role.CMO,
-    status: TaskStatus.WAITING_APPROVAL,
-    priority: 'NORMAL',
-    due_date: new Date(Date.now() + 86400000 * 2).toISOString(),
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-    data: {
-      script_content: 'INTRO\n[Camera pans to host]\nHost: Welcome back to the channel...',
-    },
-    history: [
-      {
-        id: 'h3',
-        stage: WorkflowStage.SCRIPT,
-        actor_id: 'u1',
-        actor_name: 'Alice Writer',
-        action: 'SUBMITTED',
-        timestamp: new Date(Date.now() - 1000000).toISOString()
-      }
-    ],
-  },
-  {
-    id: 'p3',
-    title: 'Q3 Financial Highlights',
-    channel: Channel.INSTAGRAM,
-    content_type: 'VIDEO',
-    current_stage: WorkflowStage.FINAL_REVIEW_CEO,
-    assigned_to_role: Role.CEO,
-    status: TaskStatus.WAITING_APPROVAL,
-    priority: 'NORMAL',
-    due_date: new Date(Date.now() + 43200000).toISOString(),
-    created_at: new Date(Date.now() - 200000).toISOString(),
-    data: {
-      script_content: 'Quick upbeat music. Text overlay: 30% Growth!',
-    },
-    thumbnail_link: 'https://example.com/thumb.png',
-    history: [],
-  },
-  {
-    id: 'p4',
-    title: 'Company Culture Reel',
-    channel: Channel.INSTAGRAM,
-    content_type: 'VIDEO',
-    current_stage: WorkflowStage.SCRIPT, // With Writer
-    assigned_to_role: Role.WRITER,
-    status: TaskStatus.IN_PROGRESS,
-    priority: 'NORMAL',
-    due_date: new Date(Date.now() + 86400000 * 5).toISOString(),
-    created_at: new Date(Date.now() - 50000).toISOString(),
-    data: {
-      brief: 'Showcase our coffee breaks and team events.'
-    },
-    history: [],
+let users: User[] = [...MOCK_USERS];
+let projects: Project[] = [...MOCK_PROJECTS];
+let systemLogs: SystemLog[] = [...MOCK_SYSTEM_LOGS];
+let currentUser: User | null = null;
+
+// ID generators
+let userIdCounter = users.length + 1;
+let projectIdCounter = projects.length + 1;
+let logIdCounter = systemLogs.length + 1;
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+const delay = (ms: number = 200) => new Promise(resolve => setTimeout(resolve, ms));
+
+const saveToLocalStorage = () => {
+  try {
+    localStorage.setItem('mock_users', JSON.stringify(users));
+    localStorage.setItem('mock_projects', JSON.stringify(projects));
+    localStorage.setItem('mock_logs', JSON.stringify(systemLogs));
+  } catch (error) {
+    console.warn('Failed to persist to localStorage:', error);
   }
-];
+};
 
-class MockDb {
-  private projects: Project[] = [...INITIAL_PROJECTS];
-  private users: User[] = [...DEMO_USERS];
-  private systemLogs: SystemLog[] = [];
-  private currentUser: User | null = null;
+const loadFromLocalStorage = () => {
+  try {
+    const savedUsers = localStorage.getItem('mock_users');
+    const savedProjects = localStorage.getItem('mock_projects');
+    const savedLogs = localStorage.getItem('mock_logs');
 
-  constructor() {
-    this.systemLogs.push({
-      id: generateId(),
-      timestamp: new Date(Date.now() - 10000000).toISOString(),
-      actor_id: 'u8',
-      actor_name: 'Admin User',
-      actor_role: Role.ADMIN,
-      action: 'SYSTEM_INIT',
-      details: 'System initialized'
-    });
+    if (savedUsers) users = JSON.parse(savedUsers);
+    if (savedProjects) projects = JSON.parse(savedProjects);
+    if (savedLogs) systemLogs = JSON.parse(savedLogs);
+  } catch (error) {
+    console.warn('Failed to load from localStorage:', error);
   }
+};
 
-  // --- Auth & Session ---
+// Load persisted data on module init
+loadFromLocalStorage();
 
-  login(role: Role): User {
-    const user = this.users.find(u => u.role === role && u.status === UserStatus.ACTIVE);
-    if (!user) {
-      throw new Error('User inactive or not found');
+// ============================================================================
+// AUTH METHODS
+// ============================================================================
+
+export const auth = {
+  async signIn(email: string, password: string) {
+    await delay();
+    console.log('🔐 Mock Login:', email);
+
+    const user = users.find(u => u.email === email);
+    const expectedPassword = getUserPassword(email);
+
+    if (!user || password !== expectedPassword) {
+      throw new Error('Invalid login credentials');
     }
+
+    // Update last login
     user.last_login = new Date().toISOString();
-    this.currentUser = user;
-    this.logAction('LOGIN', `User ${user.full_name} logged in`);
-    return user;
-  }
+    saveToLocalStorage();
 
-  getCurrentUser(): User | null {
-    return this.currentUser;
-  }
+    // Store session
+    currentUser = user;
+    localStorage.setItem('mock_session', JSON.stringify(user));
 
-  logout() {
-    if (this.currentUser) {
-      this.logAction('LOGOUT', `User ${this.currentUser.full_name} logged out`);
-    }
-    this.currentUser = null;
-  }
-
-  // --- User Management (Admin) ---
-
-  getUsers(): User[] {
-    return this.users;
-  }
-
-  addUser(user: Omit<User, 'id' | 'last_login'>): User {
-    const newUser: User = {
-      ...user,
-      id: generateId(),
-      last_login: undefined
-    };
-    this.users = [newUser, ...this.users];
-    this.logAction('USER_CREATED', `Created user ${newUser.full_name} as ${newUser.role}`);
-    return newUser;
-  }
-
-  updateUser(id: string, updates: Partial<User>) {
-    const idx = this.users.findIndex(u => u.id === id);
-    if (idx !== -1) {
-      const oldUser = this.users[idx];
-      this.users[idx] = { ...oldUser, ...updates };
-      this.logAction('USER_UPDATED', `Updated user ${oldUser.full_name}`);
-    }
-  }
-
-  // --- System Logs ---
-
-  getSystemLogs(): SystemLog[] {
-    return this.systemLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
-
-  private logAction(action: string, details: string) {
-    if (!this.currentUser) return;
-    this.systemLogs.unshift({
-      id: generateId(),
+    // Add login log
+    systemLogs.push({
+      id: `log-${logIdCounter++}`,
       timestamp: new Date().toISOString(),
-      actor_id: this.currentUser.id,
-      actor_name: this.currentUser.full_name,
-      actor_role: this.currentUser.role,
-      action,
-      details
+      actor_id: user.id,
+      actor_name: user.full_name,
+      actor_role: user.role,
+      action: 'LOGIN',
+      details: `User ${user.full_name} logged in`
     });
-  }
+    saveToLocalStorage();
 
-  // --- Projects & Workflow ---
+    return { user, session: { user, access_token: 'mock-token' } };
+  },
 
-  getProjects(user: User): Project[] {
-    // For CEO/CMO/Admin, show most things
-    if ([Role.CEO, Role.CMO, Role.ADMIN, Role.OPS].includes(user.role)) {
-      return this.projects;
+  async signOut() {
+    await delay(100);
+    console.log('🚪 Mock Logout');
+
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'LOGOUT',
+        details: `User ${currentUser.full_name} logged out`
+      });
+      saveToLocalStorage();
     }
-    // For Writers/Creatives, show assigned or created by them
-    return this.projects;
+
+    currentUser = null;
+    localStorage.removeItem('mock_session');
+  },
+
+  async getCurrentUser() {
+    const session = localStorage.getItem('mock_session');
+    if (session) {
+      currentUser = JSON.parse(session);
+    }
+    return currentUser;
+  },
+
+  async getSession() {
+    const session = localStorage.getItem('mock_session');
+    if (session) {
+      const user = JSON.parse(session);
+      return { data: { session: { user } }, error: null };
+    }
+    return { data: { session: null }, error: null };
+  },
+
+  async updatePassword(newPassword: string) {
+    await delay();
+    console.log('🔑 Mock password update (noop)');
+    // In mock mode, we don't actually store passwords
+    return { error: null };
+  },
+
+  async resetPassword(email: string) {
+    await delay();
+    console.log('📧 Mock password reset email (noop)', email);
+    // In mock mode, we just log but don't send email
+    return { error: null };
   }
+};
 
-  getProjectById(id: string): Project | undefined {
-    return this.projects.find(p => p.id === id);
+// ============================================================================
+// USER METHODS
+// ============================================================================
+
+export const usersApi = {
+  async getAll() {
+    await delay();
+    return users;
+  },
+
+  async getByEmail(email: string) {
+    await delay();
+    const user = users.find(u => u.email === email);
+    if (!user) {
+      throw new Error(`No user found with email: ${email}`);
+    }
+    return user;
+  },
+
+  async getById(id: string) {
+    await delay();
+    const user = users.find(u => u.id === id);
+    if (!user) {
+      throw new Error(`No user found with id: ${id}`);
+    }
+    return user;
+  },
+
+  async create(userData: Omit<User, 'id' | 'last_login'>) {
+    await delay();
+    const newUser: User = {
+      id: `user-${userIdCounter++}`,
+      ...userData,
+      last_login: null
+    };
+    users.push(newUser);
+    saveToLocalStorage();
+
+    // Log user creation
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'USER_CREATED',
+        details: `User ${newUser.full_name} created with role ${newUser.role}`
+      });
+      saveToLocalStorage();
+    }
+
+    return newUser;
+  },
+
+  async update(id: string, updates: Partial<User>) {
+    await delay();
+    const index = users.findIndex(u => u.id === id);
+    if (index === -1) {
+      throw new Error(`User ${id} not found`);
+    }
+
+    users[index] = { ...users[index], ...updates };
+    saveToLocalStorage();
+
+    // Log user update
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'USER_UPDATED',
+        details: `User ${users[index].full_name} updated`
+      });
+      saveToLocalStorage();
+    }
+
+    return users[index];
+  },
+
+  async delete(id: string) {
+    await delay();
+    const user = users.find(u => u.id === id);
+    if (!user) {
+      throw new Error(`User ${id} not found`);
+    }
+
+    users = users.filter(u => u.id !== id);
+    saveToLocalStorage();
+
+    // Log user deletion
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'USER_DELETED',
+        details: `User ${user.full_name} (${user.email}) deleted`
+      });
+      saveToLocalStorage();
+    }
+
+    return true;
   }
+};
 
-  createProject(title: string, channel: Channel, dueDate: string, contentType: ContentType = 'VIDEO'): Project {
-    const workflow = WORKFLOWS[channel];
-    const firstStep = workflow[0];
+// ============================================================================
+// PROJECT METHODS
+// ============================================================================
 
+export const projectsApi = {
+  async getAll() {
+    await delay();
+    return projects;
+  },
+
+  async getById(id: string) {
+    await delay();
+    const project = projects.find(p => p.id === id);
+    if (!project) {
+      throw new Error(`Project ${id} not found`);
+    }
+    return project;
+  },
+
+  async getByRole(role: Role) {
+    await delay();
+    return projects.filter(p => p.assigned_to_role === role);
+  },
+
+  async create(projectData: Omit<Project, 'id' | 'created_at' | 'history'>) {
+    await delay();
     const newProject: Project = {
-      id: generateId(),
+      id: `proj-${projectIdCounter++}`,
+      ...projectData,
+      created_at: new Date().toISOString(),
+      history: []
+    };
+    projects.push(newProject);
+    saveToLocalStorage();
+
+    // Log project creation
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'PROJECT_CREATED',
+        details: `Project "${newProject.title}" created`
+      });
+      saveToLocalStorage();
+    }
+
+    return newProject;
+  },
+
+  async update(id: string, updates: Partial<Project>) {
+    await delay();
+    const index = projects.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error(`Project ${id} not found`);
+    }
+
+    projects[index] = { ...projects[index], ...updates };
+    saveToLocalStorage();
+
+    // Log project update
+    if (currentUser) {
+      systemLogs.push({
+        id: `log-${logIdCounter++}`,
+        timestamp: new Date().toISOString(),
+        actor_id: currentUser.id,
+        actor_name: currentUser.full_name,
+        actor_role: currentUser.role,
+        action: 'PROJECT_UPDATED',
+        details: `Project "${projects[index].title}" updated`
+      });
+      saveToLocalStorage();
+    }
+
+    return projects[index];
+  },
+
+  async delete(id: string) {
+    await delay();
+    const project = projects.find(p => p.id === id);
+    if (!project) {
+      throw new Error(`Project ${id} not found`);
+    }
+
+    projects = projects.filter(p => p.id !== id);
+    saveToLocalStorage();
+
+    return true;
+  }
+};
+
+// ============================================================================
+// SYSTEM LOGS
+// ============================================================================
+
+export const logsApi = {
+  async getAll() {
+    await delay();
+    return systemLogs.sort((a, b) =>
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  },
+
+  async add(entry: Omit<SystemLog, 'id' | 'timestamp'>) {
+    const newLog: SystemLog = {
+      id: `log-${logIdCounter++}`,
+      timestamp: new Date().toISOString(),
+      ...entry
+    };
+    systemLogs.push(newLog);
+    saveToLocalStorage();
+    return newLog;
+  }
+};
+
+// ============================================================================
+// STORAGE (MOCK)
+// ============================================================================
+
+export const storage = {
+  async uploadThumbnail(file: File, projectId: string) {
+    await delay();
+    console.log('📸 Mock thumbnail upload:', file.name);
+    return `https://via.placeholder.com/1080x1920/FF6B6B/FFFFFF?text=${encodeURIComponent(file.name)}`;
+  },
+
+  async uploadVideo(file: File, projectId: string) {
+    await delay();
+    console.log('🎥 Mock video upload:', file.name);
+    return 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4';
+  },
+
+  async uploadCreative(file: File, projectId: string) {
+    await delay();
+    console.log('🎨 Mock creative upload:', file.name);
+    return `https://via.placeholder.com/1080x1080/4ECDC4/FFFFFF?text=${encodeURIComponent(file.name)}`;
+  },
+
+  async deleteFile(bucket: string, path: string) {
+    await delay();
+    console.log('🗑️ Mock file delete:', path);
+    return true;
+  }
+};
+
+// ============================================================================
+// MAIN DB EXPORT (API Compatible with supabaseDb.ts)
+// ============================================================================
+
+export const db = {
+  // Auth - nested for compatibility
+  auth: {
+    resetPassword: async (email: string) => {
+      await delay();
+      console.log('📧 Mock password reset (noop)', email);
+      return { error: null };
+    },
+    updatePassword: async (newPassword: string) => {
+      await delay();
+      console.log('🔑 Mock password update (noop)');
+      return { error: null };
+    }
+  },
+
+  // Auth - top level
+  async login(email: string, password: string) {
+    const result = await auth.signIn(email, password);
+    return result.user;
+  },
+
+  async logout() {
+    await auth.signOut();
+  },
+
+  getCurrentUser: () => currentUser,
+
+  async updatePassword(newPassword: string) {
+    await auth.updatePassword(newPassword);
+  },
+
+  async resetPassword(email: string) {
+    await auth.resetPassword(email);
+  },
+
+  // Users
+  users: usersApi,
+
+  async getUsers() {
+    return await usersApi.getAll();
+  },
+
+  async addUser(userData: Omit<User, 'id' | 'last_login'>) {
+    return await usersApi.create(userData);
+  },
+
+  async updateUser(id: string, updates: Partial<User>) {
+    await usersApi.update(id, updates);
+  },
+
+  async deleteUser(id: string) {
+    await usersApi.delete(id);
+  },
+
+  async inviteUser(email: string, userData: any) {
+    // Mock invite - just create user
+    return await usersApi.create({
+      email,
+      full_name: userData.full_name,
+      role: userData.role,
+      phone: userData.phone,
+      status: UserStatus.ACTIVE
+    });
+  },
+
+  // Projects
+  async getProjects() {
+    return await projectsApi.getAll();
+  },
+
+  async getProjectById(id: string) {
+    return await projectsApi.getById(id);
+  },
+
+  async getProjectsByRole(role: Role) {
+    return await projectsApi.getByRole(role);
+  },
+
+  createProject(title: string, channel: Channel, dueDate: string, contentType: ContentType = ContentType.VIDEO): Project {
+    // Synchronous version for compatibility
+    const newProject: Project = {
+      id: `proj-${projectIdCounter++}`,
       title,
       channel,
       content_type: contentType,
-      current_stage: firstStep.stage,
-      assigned_to_role: firstStep.role,
+      current_stage: WorkflowStage.SCRIPT,
+      assigned_to_role: Role.WRITER,
       status: TaskStatus.TODO,
-      priority: 'NORMAL',
+      priority: Priority.NORMAL,
       due_date: dueDate,
       created_at: new Date().toISOString(),
       data: {},
-      history: [
-        {
-          id: generateId(),
-          stage: firstStep.stage,
-          actor_id: this.currentUser?.id || 'system',
-          actor_name: this.currentUser?.full_name || 'System',
-          action: 'CREATED',
-          timestamp: new Date().toISOString(),
-        }
-      ]
+      history: []
     };
-
-    this.projects = [newProject, ...this.projects];
-    this.logAction('PROJECT_CREATED', `Created project ${title} for ${channel}`);
+    projects.push(newProject);
+    saveToLocalStorage();
     return newProject;
-  }
+  },
 
-  updateProjectData(projectId: string, newData: Partial<ProjectData>) {
-    const project = this.projects.find(p => p.id === projectId);
+  async updateProject(id: string, updates: Partial<Project>) {
+    return await projectsApi.update(id, updates);
+  },
+
+  // Update project data (for writer script updates)
+  updateProjectData(projectId: string, data: any) {
+    const project = projects.find(p => p.id === projectId);
     if (project) {
-      project.data = { ...project.data, ...newData };
-      // If writer is typing, set to In Progress
-      if (project.assigned_to_role === Role.WRITER && project.status === TaskStatus.TODO) {
-        project.status = TaskStatus.IN_PROGRESS;
-      }
+      project.data = { ...project.data, ...data };
+      saveToLocalStorage();
+      console.log('📝 Mock updateProjectData:', projectId, data);
     }
-  }
+  },
 
-  // WRITER SUBMITS TO CMO
-  submitToReview(projectId: string) {
-    const project = this.projects.find(p => p.id === projectId);
-    if (!project) return;
+  async deleteProject(id: string) {
+    await projectsApi.delete(id);
+  },
 
-    // Logic: If in SCRIPT stage, Next is SCRIPT_REVIEW_L1 (CMO)
-    // Using WORKFLOWS array to strictly find next step
-    const workflow = WORKFLOWS[project.channel];
-    const currentIndex = workflow.findIndex(step => step.stage === project.current_stage);
-    const nextStep = workflow[currentIndex + 1];
+  // Workflow
+  async submitToReview(projectId: string) {
+    await delay();
+    console.log('📝 Mock submit to review:', projectId);
+  },
 
-    if (nextStep) {
-      project.history.push({
-        id: generateId(),
-        stage: project.current_stage,
-        actor_id: this.currentUser?.id || 'unknown',
-        actor_name: this.currentUser?.full_name || 'Unknown',
-        action: 'SUBMITTED',
-        timestamp: new Date().toISOString()
-      });
+  async advanceWorkflow(projectId: string, comment?: string) {
+    await delay();
+    console.log('➡️  Mock advance workflow:', projectId);
+  },
 
-      project.current_stage = nextStep.stage;
-      project.assigned_to_role = nextStep.role;
-      project.status = TaskStatus.WAITING_APPROVAL;
-
-      this.logAction('WORKFLOW_SUBMIT', `Submitted ${project.title} to ${nextStep.role}`);
-    }
-  }
-
-  advanceWorkflow(projectId: string, comment?: string) {
-    const project = this.projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    const workflow = WORKFLOWS[project.channel];
-    const currentIndex = workflow.findIndex(step => step.stage === project.current_stage);
-    const nextStep = workflow[currentIndex + 1];
-
-    if (nextStep) {
-      const action = this.isApprovalStage(project.current_stage) ? 'APPROVED' : 'SUBMITTED';
-
-      project.history.push({
-        id: generateId(),
-        stage: project.current_stage,
-        actor_id: this.currentUser?.id || 'unknown',
-        actor_name: this.currentUser?.full_name || 'Unknown',
-        action: action,
-        comment,
-        timestamp: new Date().toISOString()
-      });
-
-      this.logAction('WORKFLOW_ADVANCE', `${action} project ${project.title} at ${project.current_stage}`);
-
-      project.current_stage = nextStep.stage;
-      project.assigned_to_role = nextStep.role;
-      // If next is an approver, status is Waiting Approval. Else it's Todo for the worker.
-      project.status = this.isApprovalStage(nextStep.stage) ? TaskStatus.WAITING_APPROVAL : TaskStatus.TODO;
-    } else {
-      // Workflow complete
-      project.status = TaskStatus.DONE;
-      project.history.push({
-        id: generateId(),
-        stage: project.current_stage,
-        actor_id: this.currentUser?.id || 'unknown',
-        actor_name: this.currentUser?.full_name || 'Unknown',
-        action: 'PUBLISHED',
-        comment: 'Workflow Completed',
-        timestamp: new Date().toISOString()
-      });
-    }
-  }
-
+  // Reject task (for CMO/CEO rejection)
   rejectTask(projectId: string, targetStage: WorkflowStage, comment: string) {
-    const project = this.projects.find(p => p.id === projectId);
-    if (!project) return;
-
-    const workflow = WORKFLOWS[project.channel];
-    const targetStep = workflow.find(s => s.stage === targetStage);
-
-    if (targetStep) {
-      project.history.push({
-        id: generateId(),
-        stage: project.current_stage,
-        actor_id: this.currentUser?.id || 'unknown',
-        actor_name: this.currentUser?.full_name || 'Unknown',
-        action: 'REJECTED',
-        comment,
-        timestamp: new Date().toISOString()
-      });
-
-      this.logAction('WORKFLOW_REJECT', `Rejected project ${project.title} back to ${targetStage}`);
-
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
       project.current_stage = targetStage;
-      project.assigned_to_role = targetStep.role;
       project.status = TaskStatus.REJECTED;
+      saveToLocalStorage();
+      console.log('❌ Mock rejectTask:', projectId, 'to', targetStage, comment);
+    }
+  },
+
+  // Logs
+  async getSystemLogs() {
+    return await logsApi.getAll();
+  },
+
+  // Storage
+  storage,
+
+  // Helpers
+  helpers: {
+    getNextStage(currentStage: WorkflowStage, contentType: ContentType, action: 'approve' | 'reject') {
+      // Mock workflow logic
+      return {
+        stage: WorkflowStage.PUBLISHED,
+        role: Role.OPS
+      };
     }
   }
+};
 
-  private isApprovalStage(stage: WorkflowStage): boolean {
-    return [
-      WorkflowStage.SCRIPT_REVIEW_L1,
-      WorkflowStage.SCRIPT_REVIEW_L2,
-      WorkflowStage.FINAL_REVIEW_CMO,
-      WorkflowStage.FINAL_REVIEW_CEO
-    ].includes(stage);
-  }
-}
-
-export const db = new MockDb();
+export default db;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Project, Role, WorkflowStage, TaskStatus, STAGE_LABELS, ProjectData, ROLE_LABELS } from '../types';
-import { db } from '../services/supabaseDb';
+import { db } from '../services/mockDb';
 import { format } from 'date-fns';
 import {
   ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, FileText, Send, XCircle,

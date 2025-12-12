@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, ArrowRight, Layers, Zap, CheckCircle, X, Mail, Key, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react';
-import { db } from '../services/supabaseDb';
+import { db } from '../services/mockDb';
 import { User } from '../types';
 
 interface AuthProps {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Project, OBSERVER_TITLES } from '../../types';
 import { BarChart3, Users, Calendar, FileText, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { db } from '../../services/supabaseDb';
+import { db } from '../../services/mockDb';
 
 interface ObserverDashboardProps {
     user: User;

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { supabase } from './services/supabase';
-import { db, tokenHealthCheck } from './services/supabaseDb';
+import { db } from './services/mockDb';
 import { User, Project, Channel, Role } from './types';
 import Auth from './components/Auth';
 import Layout from './components/Layout';
@@ -92,96 +91,28 @@ function App() {
   // Simplified session restoration with proper error handling
   const restoreSession = async () => {
     try {
-      console.log('🔄 Session Restore: Starting...');
+      console.log('🔄 Session Restore: Starting (Mock Mode)...');
 
-      // STEP 1: Check if tokens exist
-      const tokens = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
+      // For mock mode, just check localStorage
+      const mockSession = localStorage.getItem('mock_session');
 
-      if (tokens.length === 0) {
-        console.log('✅ Session Restore: No tokens found, clean state');
-        return; // Clean state, no session to restore
-      }
-
-      console.log(`🔍 Session Restore: Found ${tokens.length} tokens, validating...`);
-
-      // STEP 2: Attempt session restoration with timeout protection
-      const sessionPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Session check timeout')), 5000)
-      );
-
-      const { data: { session }, error: sessionError } = await Promise.race([
-        sessionPromise,
-        timeoutPromise
-      ]) as any;
-
-      // STEP 3: Handle timeout or session errors
-      if (sessionError) {
-        if (sessionError.message?.includes('timeout')) {
-          console.error('❌ Session Restore: Timeout after 5 seconds, clearing stale tokens');
-          clearAllTokens();
-          return;
-        }
-
-        console.warn('⚠️  Session Restore: Session check error:', sessionError);
-        // Only clear if it's an auth error (invalid token), not network/other errors
-        if (sessionError.message?.includes('invalid') || sessionError.message?.includes('expired')) {
-          console.log('🧹 Session Restore: Token is invalid/expired, clearing...');
-          clearAllTokens();
-        }
+      if (!mockSession) {
+        console.log('✅ Session Restore: No saved session');
         return;
       }
 
-      // STEP 4: Validate session exists and hasn't expired
-      if (!session) {
-        console.log('⚠️  Session Restore: No active session despite tokens existing, clearing...');
-        clearAllTokens();
-        return;
-      }
-
-      // STEP 5: Check if session is actually usable (not expired)
-      if (session.expires_at && session.expires_at * 1000 < Date.now()) {
-        console.warn('⚠️  Session Restore: Session expired, clearing tokens');
-        clearAllTokens();
-        return;
-      }
-
-      // STEP 6: Session valid, fetch user data
-      if (session?.user) {
-        console.log('✅ Session Restore: Valid session found, fetching user data...');
-        try {
-          const fullUser = await db.users.getByEmail(session.user.email!);
-          if (fullUser) {
-            console.log('✅ Session Restore: Session restored for:', fullUser.full_name);
-            setUser(fullUser);
-            await refreshData(fullUser);
-          } else {
-            console.warn('⚠️  Session Restore: User not found in database for email:', session.user.email);
-            // User exists in auth but not in database - this is a real problem, clear session
-            await supabase.auth.signOut();
-            clearAllTokens();
-          }
-        } catch (dbError) {
-          console.error('❌ Session Restore: Error fetching user from database:', dbError);
-          // DON'T clear tokens on database errors - might be temporary network issue
-          // Just log the error and show login screen
-        }
+      try {
+        const user = JSON.parse(mockSession);
+        console.log('✅ Session Restore: Session restored for:', user.full_name);
+        setUser(user);
+        await refreshData(user);
+      } catch (error) {
+        console.error('❌ Session Restore: Invalid session data, clearing');
+        localStorage.removeItem('mock_session');
       }
     } catch (error: any) {
       console.error('❌ Session Restore: Fatal error:', error);
-
-      // Handle timeout specifically
-      if (error.message?.includes('timeout')) {
-        console.error('🧹 Session Restore: Timeout detected, clearing tokens');
-        clearAllTokens();
-        return;
-      }
-
-      // DON'T clear tokens on all errors - only on auth-specific errors
-      if (error.message?.includes('invalid') || error.message?.includes('expired') || error.message?.includes('token')) {
-        console.log('🧹 Session Restore: Auth error detected, clearing tokens');
-        clearAllTokens();
-      }
+      localStorage.removeItem('mock_session');
     }
   };
 
@@ -269,36 +200,6 @@ function App() {
     }
   }, [adminView, user]);
 
-  // Token Health Watchdog - Check for corruption on mount and periodically
-  useEffect(() => {
-    console.log('🛡️  Token Watchdog: Starting health check...');
-
-    // Run health check on mount
-    const health = tokenHealthCheck();
-    console.log('🛡️  Token Watchdog: Health status:', health.status);
-
-    if (!health.healthy) {
-      console.warn('⚠️  Token Watchdog: Unhealthy tokens detected on mount, clearing...');
-      clearAllTokens();
-    }
-
-    // Periodic health check (every 5 minutes when user is logged in)
-    const interval = setInterval(() => {
-      if (!user) return; // Only monitor when logged in
-
-      console.log('🛡️  Token Watchdog: Periodic health check...');
-      const health = tokenHealthCheck();
-
-      if (!health.healthy) {
-        console.error('🔴 Token Watchdog: Token corruption detected during session, forcing logout...');
-        alert('Session corrupted. Logging out for security.');
-        handleLogout();
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
-
-    return () => clearInterval(interval);
-  }, [user]);
-
   // Block keyboard refresh shortcuts (F5, Ctrl+R) while allowing browser reload button with confirmation
   useEffect(() => {
     if (!user) return; // Only block when user is logged in
@@ -357,7 +258,7 @@ function App() {
         const logs = await db.getSystemLogs();
         setAdminLogs([...logs]);
       } else {
-        const userProjects = await db.getProjects(u);
+        const userProjects = await db.getProjects();
         setProjects([...userProjects]);
       }
     } catch (error) {

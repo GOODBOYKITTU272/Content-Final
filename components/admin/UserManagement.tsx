@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, Role, UserStatus, SystemLog } from '../../types';
-import { db } from '../../services/supabaseDb';
+import { db } from '../../services/mockDb';
 import { Search, Plus, Filter, Edit2, Shield, Power, Key, X, User as UserIcon, AlertTriangle, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { AdminView } from '../AdminLayout';
